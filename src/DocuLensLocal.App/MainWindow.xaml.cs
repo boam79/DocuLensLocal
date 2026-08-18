@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
@@ -10,21 +11,79 @@ namespace DocuLensLocal.App;
 public partial class MainWindow : Window
 {
     private readonly IndexingService _indexing = new();
+    private readonly AppUpdater _updater = new();
+    private readonly IUpdateFeed _updateFeed;
     private bool _isIndexing;
+    private bool _showMainSearch;
 
     public MainWindow()
+        : this(new VelopackUpdateFeed())
     {
+    }
+
+    public MainWindow(IUpdateFeed updateFeed)
+    {
+        _updateFeed = updateFeed;
         InitializeComponent();
+        LoadInfoPanel();
         ApplyStartupView();
+    }
+
+    private void LoadInfoPanel()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product
+            ?? "DocuLens Local";
+        var version = AppVersionFormatter.DisplayVersion(
+            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+            assembly.GetName().Version);
+
+        ProductNameText.Text = product;
+        VersionText.Text = $"버전 {version}";
+        var notes = ReleaseHistory.Known;
+        VersionHistoryList.ItemsSource = notes
+            .Select((note, i) => new HistoryRow
+            {
+                Version = note.Version,
+                SummaryKo = note.SummaryKo,
+                IsCurrent = i == 0,
+                IsLast = i == notes.Count - 1,
+            })
+            .ToList();
     }
 
     private void ApplyStartupView()
     {
         var settings = LoadSettings();
         var indexedCount = _indexing.GetIndexedDocuments().Count;
-        if (StartupViewResolver.Resolve(settings, indexedCount) == StartupView.MainSearch)
+        _showMainSearch = StartupViewResolver.Resolve(settings, indexedCount) == StartupView.MainSearch;
+        RefreshMainContent(resetSearch: true);
+    }
+
+    private void NavTab_OnChecked(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded)
         {
-            ShowMainSearch();
+            return;
+        }
+
+        RefreshMainContent(resetSearch: false);
+    }
+
+    private void RefreshMainContent(bool resetSearch)
+    {
+        var showInfo = InfoTab.IsChecked == true;
+        InfoPanel.Visibility = showInfo ? Visibility.Visible : Visibility.Collapsed;
+        if (showInfo)
+        {
+            FirstRunPanel.Visibility = Visibility.Collapsed;
+            SearchPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (_showMainSearch)
+        {
+            ShowMainSearch(resetSearch);
             return;
         }
 
@@ -35,17 +94,26 @@ public partial class MainWindow : Window
     {
         FirstRunPanel.Visibility = Visibility.Visible;
         SearchPanel.Visibility = Visibility.Collapsed;
+        InfoPanel.Visibility = Visibility.Collapsed;
         ShowSavedFolder();
         UpdateIndexButtonState();
     }
 
-    private void ShowMainSearch()
+    private void ShowMainSearch(bool resetSearch)
     {
         FirstRunPanel.Visibility = Visibility.Collapsed;
         SearchPanel.Visibility = Visibility.Visible;
-        SearchQueryBox.Text = string.Empty;
+        InfoPanel.Visibility = Visibility.Collapsed;
+        if (resetSearch)
+        {
+            SearchQueryBox.Text = string.Empty;
+        }
+
         RunSearch();
-        SearchQueryBox.Focus();
+        if (resetSearch)
+        {
+            SearchQueryBox.Focus();
+        }
     }
 
     private void ShowSavedFolder()
@@ -144,7 +212,9 @@ public partial class MainWindow : Window
         var settings = LoadSettings();
         settings.IndexCompleted = true;
         SaveSettings(settings);
-        ShowMainSearch();
+        _showMainSearch = true;
+        SearchTab.IsChecked = true;
+        ShowMainSearch(resetSearch: true);
     }
 
     private void SearchButton_OnClick(object sender, RoutedEventArgs e) => RunSearch();
@@ -160,8 +230,30 @@ public partial class MainWindow : Window
 
     private void ChangeFolderButton_OnClick(object sender, RoutedEventArgs e)
     {
+        _showMainSearch = false;
+        SearchTab.IsChecked = true;
         ShowFirstRun();
         IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 다시 시작합니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+    }
+
+    private async void UpdateButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        UpdateButton.IsEnabled = false;
+        UpdateStatusText.Text = "업데이트를 확인하는 중…";
+
+        try
+        {
+            var result = await _updater.CheckAndApplyAsync(_updateFeed).ConfigureAwait(true);
+            UpdateStatusText.Text = result.MessageKo;
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText.Text = $"업데이트를 확인하지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            UpdateButton.IsEnabled = true;
+        }
     }
 
     private void RunSearch()
@@ -217,5 +309,13 @@ public partial class MainWindow : Window
     {
         public required string FileName { get; init; }
         public required string FilePath { get; init; }
+    }
+
+    private sealed class HistoryRow
+    {
+        public required string Version { get; init; }
+        public required string SummaryKo { get; init; }
+        public bool IsCurrent { get; init; }
+        public bool IsLast { get; init; }
     }
 }
