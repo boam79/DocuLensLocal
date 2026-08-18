@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DocuLensLocal.App/DocuLensLocal.App.csproj" />
+    <Project Path="src/DocuLensLocal.Core/DocuLensLocal.Core.csproj" />
+    <Project Path="src/DocuLensLocal.Worker/DocuLensLocal.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DocuLensLocal.Core.Tests/DocuLensLocal.Core.Tests.csproj" />
+  </Folder>
+</Solution>
