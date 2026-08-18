@@ -6,3 +6,6 @@ obj/
 *.userosscache
 TestResults/
 *.log
+artifacts/
+publish/
+Releases/
