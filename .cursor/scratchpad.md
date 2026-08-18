@@ -88,11 +88,18 @@
   - 남은 P0: PDFium 본문 추출·OCR·미리보기·근거 문장. 본문 검색은 stub. 파일명 NL만 이번 슬라이스.
   - `dotnet test` 34/34, App 빌드 성공.
   - 수동 확인: Debug `src\DocuLensLocal.App\bin\Debug\net10.0-windows\DocuLensLocal.exe` 검색창에 `버스 광고 찾아줘`. 설치본은 0.1.5 업데이트 후.
+- 2026-08-18 (릴리스 Executor): **v0.1.5 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음.
+  - 커밋 `77472ef` push됨: Match Korean NL filename queries and bump installer to 0.1.5.
+  - 로컬: `C:\Users\tttt\DocuLensLocal\artifacts\Releases\DocuLensLocal-win-Setup.exe`
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.5/DocuLensLocal-win-Setup.exe (HEAD 302, follow 200, 72880377 bytes)
+  - 0.1.4 대비: 「버스 광고 찾아줘」가 파일명 키워드(버스/광고)로 검색됨. 설치 페이로드만 업로드(PDF/인덱스 없음).
+  - Planner에게 설치본 수동 확인 요청. 완료 표시는 사용자 확인 후.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (NL 파일명 검색 수정 완료, v0.1.5 릴리스 진행)
-- 다음: 사용자가 Debug/설치본에서 「버스 광고 찾아줘」 결과를 확인한 뒤 Planner가 완료 표시.
+- 모드: **Executor** (v0.1.5 업로드 완료, 사용자 수동 확인 대기)
+- origin/main: `77472ef`. 릴리스 태그: v0.1.5
+- 다음: 사용자가 Debug 또는 설치본에서 「버스 광고 찾아줘」로 버스/광고 파일명이 나오는지 확인한 뒤 Planner가 완료 표시.
 
 ## Lessons
 
