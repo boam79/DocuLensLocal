@@ -16,4 +16,7 @@ public static class AppPaths
 public sealed class AppSettings
 {
     public string? IndexFolder { get; set; }
+
+    /// <summary>True after IndexingService.Start completed, including 0-file folders.</summary>
+    public bool IndexCompleted { get; set; }
 }

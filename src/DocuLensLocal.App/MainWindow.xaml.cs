@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Input;
 using DocuLensLocal.Core;
 using Microsoft.Win32;
 
@@ -14,8 +15,37 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ApplyStartupView();
+    }
+
+    private void ApplyStartupView()
+    {
+        var settings = LoadSettings();
+        var indexedCount = _indexing.GetIndexedDocuments().Count;
+        if (StartupViewResolver.Resolve(settings, indexedCount) == StartupView.MainSearch)
+        {
+            ShowMainSearch();
+            return;
+        }
+
+        ShowFirstRun();
+    }
+
+    private void ShowFirstRun()
+    {
+        FirstRunPanel.Visibility = Visibility.Visible;
+        SearchPanel.Visibility = Visibility.Collapsed;
         ShowSavedFolder();
         UpdateIndexButtonState();
+    }
+
+    private void ShowMainSearch()
+    {
+        FirstRunPanel.Visibility = Visibility.Collapsed;
+        SearchPanel.Visibility = Visibility.Visible;
+        SearchQueryBox.Text = string.Empty;
+        RunSearch();
+        SearchQueryBox.Focus();
     }
 
     private void ShowSavedFolder()
@@ -47,9 +77,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        Directory.CreateDirectory(AppPaths.UserData);
-        var settings = new AppSettings { IndexFolder = dialog.FolderName };
-        File.WriteAllText(AppPaths.SettingsFile, JsonSerializer.Serialize(settings));
+        var settings = LoadSettings();
+        settings.IndexFolder = dialog.FolderName;
+        SaveSettings(settings);
         ShowSavedFolder();
         UpdateIndexButtonState();
         IndexStatusText.Text = "폴더를 선택했습니다. 인덱싱을 누르면 시작합니다.";
@@ -104,16 +134,63 @@ public partial class MainWindow : Window
 
     private void ShowResult(IndexingResult result)
     {
-        IndexCountText.Text = $"건수: {result.ProcessedCount} / {result.FoundCount}";
-        IndexStatusText.Text = FormatCompleteStatus(result.Errors.Count);
-        if (result.Documents.Count > 0)
+        if (!result.IsCompleted)
         {
-            IndexCurrentFileText.Text = $"현재 파일: {Path.GetFileName(result.Documents[^1].FilePath)}";
+            IndexCountText.Text = $"건수: {result.ProcessedCount} / {result.FoundCount}";
+            IndexStatusText.Text = FormatCompleteStatus(result.Errors.Count);
+            return;
         }
-        else if (result.IsCompleted)
+
+        var settings = LoadSettings();
+        settings.IndexCompleted = true;
+        SaveSettings(settings);
+        ShowMainSearch();
+    }
+
+    private void SearchButton_OnClick(object sender, RoutedEventArgs e) => RunSearch();
+
+    private void SearchQueryBox_OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
         {
-            IndexCurrentFileText.Text = "현재 파일: —";
+            RunSearch();
+            e.Handled = true;
         }
+    }
+
+    private void ChangeFolderButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ShowFirstRun();
+        IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 다시 시작합니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+    }
+
+    private void RunSearch()
+    {
+        var all = _indexing.GetIndexedDocuments();
+        var query = SearchQueryBox.Text;
+        var matches = string.IsNullOrWhiteSpace(query)
+            ? all
+            : _indexing.SearchByFileName(query);
+
+        IndexedSummaryText.Text = $"인덱싱 완료 · {all.Count}건";
+        SearchResultsList.ItemsSource = matches
+            .Select(doc => new SearchResultRow
+            {
+                FileName = Path.GetFileName(doc.FilePath),
+                FilePath = doc.FilePath,
+            })
+            .ToList();
+
+        if (matches.Count > 0)
+        {
+            SearchEmptyText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        SearchEmptyText.Text = all.Count == 0
+            ? "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다."
+            : "조건에 맞는 파일이 없습니다.";
+        SearchEmptyText.Visibility = Visibility.Visible;
     }
 
     private static string FormatCompleteStatus(int errorCount) =>
@@ -128,5 +205,17 @@ public partial class MainWindow : Window
 
         var json = File.ReadAllText(AppPaths.SettingsFile);
         return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+    }
+
+    private static void SaveSettings(AppSettings settings)
+    {
+        Directory.CreateDirectory(AppPaths.UserData);
+        File.WriteAllText(AppPaths.SettingsFile, JsonSerializer.Serialize(settings));
+    }
+
+    private sealed class SearchResultRow
+    {
+        public required string FileName { get; init; }
+        public required string FilePath { get; init; }
     }
 }
