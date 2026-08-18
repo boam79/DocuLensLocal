@@ -4,7 +4,7 @@ $dotnet = "C:\Program Files\dotnet\dotnet.exe"
 $publishDir = Join-Path $root "artifacts\publish"
 $releaseDir = Join-Path $root "artifacts\Releases"
 $appCsproj = Join-Path $root "src\DocuLensLocal.App\DocuLensLocal.App.csproj"
-$version = "0.1.4"
+$version = "0.1.5"
 $splash = Join-Path $root "assets\splash.png"
 
 & $dotnet publish $appCsproj -c Release --self-contained -r win-x64 -o $publishDir

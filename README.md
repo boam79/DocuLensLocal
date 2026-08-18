@@ -10,7 +10,7 @@ Windows 10/11용 설치형 PDF 검색기입니다. 계약서·MOU 같은 PDF를 
 
 설치 파일 직접 주소:
 
-- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.4/DocuLensLocal-win-Setup.exe
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.5/DocuLensLocal-win-Setup.exe
 
 GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 

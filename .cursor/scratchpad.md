@@ -30,6 +30,7 @@
 - [x] v0.1.3 패키징·GitHub Releases 업로드 (인덱싱 완료 후 검색 화면). Planner 완료 표시는 사용자 확인 후
 - [ ] 검색 UI 현대화 + 정보 탭(버전/히스토리/업데이트) — 구현됨. 사용자 수동 확인 대기 (완료 표시 금지)
 - [x] v0.1.4 패키징·GitHub Releases 업로드 (정보 탭 목업 3 스타일). Planner 완료 표시는 사용자 확인 후
+- [ ] 자연어 파일명 검색(버스 광고 찾아줘) — 구현·테스트 통과. 사용자 확인 대기 (완료 표시 금지)
 - [ ] PDFium 본문 추출
 - [ ] OCR
 
@@ -79,12 +80,19 @@
   - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.4/DocuLensLocal-win-Setup.exe (HEAD 200)
   - 0.1.3 대비: 정보 탭 타임라인 + 틸 버전 알약(흰 글자) + 전체너비 업데이트 버튼 / 모던 크롬. 설치 페이로드만 업로드(PDF/인덱스 없음).
   - Planner에게 설치본 수동 확인 요청.
+- 2026-08-18 (검색 버그 Executor): PRD P0/P1 스토리를 코드·index.db·테스트로 실행. 화면 버그 「버스 광고 찾아줘」→ 조건에 맞는 파일이 없습니다 를 수정함. 커밋·팩은 이어서 0.1.5로 진행.
+  - 원인: `SearchByFileName`이 path LIKE 전체 문장만 봄. 「찾아줘」가 파일명에 없어서 0건.
+  - 실제 index.db(읽기 전용): 276건. `버스`/`광고` 파일명 13건(예: `버스티브이.pdf`, `…광고 계약서.pdf`). 둘 다 들어 있는 파일명은 없음 → AND 0건이면 OR로 보여야 함.
+  - 수정: 공백 분리 + 찾아줘/해줘/관련/문서 등 제거. 의미 토큰 AND 우선, 비면 OR. 본문은 PC 밖으로 안 보냄. MainWindow는 기존 `SearchByFileName` + 빈 검색=전체.
+  - 실행한 스토리: 최초실행 폴더 문구(XAML PRD 문구 일치), 인덱싱 원본 비변경(기존 테스트), 파일명 키워드(mou 테스트 유지), NL 파일명 검색(신규 테스트), 정보 탭 버전(0.1.5).
+  - 남은 P0: PDFium 본문 추출·OCR·미리보기·근거 문장. 본문 검색은 stub. 파일명 NL만 이번 슬라이스.
+  - `dotnet test` 34/34, App 빌드 성공.
+  - 수동 확인: Debug `src\DocuLensLocal.App\bin\Debug\net10.0-windows\DocuLensLocal.exe` 검색창에 `버스 광고 찾아줘`. 설치본은 0.1.5 업데이트 후.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.4 업로드 완료, 사용자 수동 확인 대기)
-- origin/main: `970672a`. 릴리스 태그: v0.1.4
-- 다음: 사용자가 설치본에서 정보 탭(타임라인·전체너비 업데이트·틸 뱃지)과 검색 탭을 확인한 뒤 Planner가 완료 표시.
+- 모드: **Executor** (NL 파일명 검색 수정 완료, v0.1.5 릴리스 진행)
+- 다음: 사용자가 Debug/설치본에서 「버스 광고 찾아줘」 결과를 확인한 뒤 Planner가 완료 표시.
 
 ## Lessons
 
@@ -94,4 +102,5 @@
 - Microsoft.Data.Sqlite 기본 연결 풀은 Windows에서 `index.db`를 잠근다. `Pooling=false` + `ClearAllPools()`가 필요하다.
 - 인덱싱 `완료`는 최초실행 화면의 종착점이 아니다. `Start` 성공(`IsCompleted`)이면 검색 화면으로 넘겨야 한다. 0건도 동일. 재시작은 `index.db` 문서 수 또는 `AppSettings.IndexCompleted`로 판단한다.
 - Velopack `UpdateManager.IsInstalled`가 false인 Debug exe에서는 업데이트를 적용하지 말고, 「최신 버전입니다.」로 위장하지 않는다. 공개 저장소 확인은 `GithubSource(repoUrl, accessToken: null, prerelease: false)`.
+- 한국어 NL 파일명 검색은 문장 전체 LIKE가 아니라 토큰(버스/광고) AND→OR. 실제 276건 인덱스에는 버스+광고 동시 파일명이 없어 OR 폴백이 필수다.
 

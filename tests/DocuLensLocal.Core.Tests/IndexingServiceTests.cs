@@ -194,6 +194,55 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task natural_language_query_matches_concatenated_and_split_filename_keywords()
+    {
+        WriteStubPdf(_pdfRoot, "서울버스광고견적서.pdf");
+        WriteStubPdf(_pdfRoot, "버스_광고_계약.pdf");
+        WriteStubPdf(_pdfRoot, "NDA-A사.pdf");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_pdfRoot);
+
+        var hits = service.SearchByFileName("버스 광고 찾아줘");
+        Assert.Equal(2, hits.Count);
+        Assert.Contains(hits, h => h.FilePath.Contains("서울버스광고견적서.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(hits, h => h.FilePath.Contains("버스_광고_계약.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(hits, h => h.FilePath.Contains("NDA-A사.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(hits, h => h.FilePath.Contains("버스 광고 찾아줘", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task natural_language_prefers_and_when_a_file_has_all_tokens()
+    {
+        WriteStubPdf(_pdfRoot, "버스만.pdf");
+        WriteStubPdf(_pdfRoot, "광고만.pdf");
+        WriteStubPdf(_pdfRoot, "버스와광고.pdf");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_pdfRoot);
+
+        var hit = Assert.Single(service.SearchByFileName("버스 광고 찾아줘"));
+        Assert.Contains("버스와광고.pdf", hit.FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task natural_language_falls_back_to_or_when_and_is_empty()
+    {
+        WriteStubPdf(_pdfRoot, "버스일정.pdf");
+        WriteStubPdf(_pdfRoot, "광고견적.pdf");
+        WriteStubPdf(_pdfRoot, "NDA.pdf");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_pdfRoot);
+
+        var hits = service.SearchByFileName("버스 광고 찾아줘");
+        Assert.Equal(2, hits.Count);
+        Assert.Contains(hits, h => h.FilePath.Contains("버스일정.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(hits, h => h.FilePath.Contains("광고견적.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(hits, h => h.FilePath.Contains("NDA.pdf", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void default_constructor_uses_apppaths_userdata()
     {
         var service = new IndexingService();
