@@ -28,6 +28,8 @@
 - [x] v0.1.2 패키징·GitHub Releases 업로드 (인덱싱 버튼 포함). Planner 완료 표시는 사용자 확인 후
 - [ ] 인덱싱 완료 후 메인 검색 화면 — 구현됨. 사용자 수동 확인 대기 (완료 표시 금지)
 - [x] v0.1.3 패키징·GitHub Releases 업로드 (인덱싱 완료 후 검색 화면). Planner 완료 표시는 사용자 확인 후
+- [ ] 검색 UI 현대화 + 정보 탭(버전/히스토리/업데이트) — 구현됨. 사용자 수동 확인 대기 (완료 표시 금지)
+- [x] v0.1.4 패키징·GitHub Releases 업로드 (정보 탭 목업 3 스타일). Planner 완료 표시는 사용자 확인 후
 - [ ] PDFium 본문 추출
 - [ ] OCR
 
@@ -56,12 +58,33 @@
   - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.3/DocuLensLocal-win-Setup.exe (HEAD 200)
   - 0.1.2 대비: 인덱싱 완료 후 최초실행에 머물지 않고 **파일명 검색 메인 화면**으로 전환. 설치 페이로드만 업로드(PDF/인덱스 없음).
   - Planner에게 설치본 수동 확인 요청.
+- 2026-08-18 (UI Executor): 검색 화면을 라이트 모던(둥근 카드·틸 액센트·상단 탭)으로 다듬고 **정보** 탭을 추가함. 커밋·팩·업로드하지 않음.
+  - 목업 3장 생성: 라이트 모던 / 사이드바형 / 정보 탭. 구현은 라이트 모던(상단 검색|정보) 방향.
+  - 정보 탭: 제품명 + 어셈블리 버전(현재 0.1.3), 하드코드 히스토리 0.1.0–0.1.3, **업데이트** 버튼(Velopack `GithubSource` + `UpdateManager`). 없으면 「최신 버전입니다.」. Debug exe는 설치본이 아니라 적용하지 않음(성공으로 위장하지 않음).
+  - 동작 유지: 폴더 선택만으로 인덱싱 안 함, 원본 PDF 읽기 전용, `userdata\index.db`, 파일명 검색.
+  - `dotnet test` 27/27, App 빌드 성공.
+  - 수동 확인용 exe: `src\DocuLensLocal.App\bin\Debug\net10.0-windows\DocuLensLocal.exe`
+  - Planner/사용자에게 확인 요청: 검색·정보 탭, 버전 표시, 업데이트 버튼 메시지, 더 손볼 UI 방향(라이트/사이드바).
+- 2026-08-18 (버전 bump Executor): 설치/앱 버전 선언을 **0.1.3 → 0.1.4**로 올리고 이력에 「정보 탭·모던 UI」를 맨 앞에 추가함. 커밋·팩·업로드하지 않음.
+- 2026-08-18 (정보 탭 스타일 Executor): 목업 이미지 3에 맞춰 정보 탭만 다시 스타일함. 버전 선언·ReleaseHistory는 수정하지 않음. 커밋·팩하지 않음.
+  - 버전 뱃지: 민트칩+진한 글자 → 틸 필 알약 + 흰 글자(어셈블리 버전).
+  - 히스토리: 작은 점 목록 → 세로 타임라인(최신 실원, 이전 빈원, 연결선, 회색 버전 칩).
+  - 업데이트: 왼쪽 작은 버튼 → 카드 전체 너비 틸 버튼. 캡션 가운데.
+  - 상단 탭을 왼쪽 정렬. 검색 탭 동작(폴더/검색/다시 인덱싱) 유지, 같은 라이트 카드·틸 크롬.
+  - App 빌드 성공, `dotnet test` 27/27.
+  - 수동 확인: `src\DocuLensLocal.App\bin\Debug\net10.0-windows\DocuLensLocal.exe` → **정보** 탭이 목업과 가까운지.
+- 2026-08-18 (릴리스 Executor): **v0.1.4 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음.
+  - 커밋 `970672a` push됨: Restyle the Info tab to match design mockup 3 and bump the installer to 0.1.4.
+  - 로컬: `C:\Users\tttt\DocuLensLocal\artifacts\Releases\DocuLensLocal-win-Setup.exe`
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.4/DocuLensLocal-win-Setup.exe (HEAD 200)
+  - 0.1.3 대비: 정보 탭 타임라인 + 틸 버전 알약(흰 글자) + 전체너비 업데이트 버튼 / 모던 크롬. 설치 페이로드만 업로드(PDF/인덱스 없음).
+  - Planner에게 설치본 수동 확인 요청.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.3 업로드 완료, 사용자 수동 확인 대기)
-- origin/main: `27285cf`. 릴리스 태그: v0.1.3
-- 다음: 사용자가 설치본에서 인덱싱 완료 → 검색 화면을 확인한 뒤 Planner가 완료 표시
+- 모드: **Executor** (v0.1.4 업로드 완료, 사용자 수동 확인 대기)
+- origin/main: `970672a`. 릴리스 태그: v0.1.4
+- 다음: 사용자가 설치본에서 정보 탭(타임라인·전체너비 업데이트·틸 뱃지)과 검색 탭을 확인한 뒤 Planner가 완료 표시.
 
 ## Lessons
 
@@ -70,3 +93,5 @@
 - 인덱스를 Velopack `current\`에 두면 업데이트 때 사라진다. UserData만 사용.
 - Microsoft.Data.Sqlite 기본 연결 풀은 Windows에서 `index.db`를 잠근다. `Pooling=false` + `ClearAllPools()`가 필요하다.
 - 인덱싱 `완료`는 최초실행 화면의 종착점이 아니다. `Start` 성공(`IsCompleted`)이면 검색 화면으로 넘겨야 한다. 0건도 동일. 재시작은 `index.db` 문서 수 또는 `AppSettings.IndexCompleted`로 판단한다.
+- Velopack `UpdateManager.IsInstalled`가 false인 Debug exe에서는 업데이트를 적용하지 말고, 「최신 버전입니다.」로 위장하지 않는다. 공개 저장소 확인은 `GithubSource(repoUrl, accessToken: null, prerelease: false)`.
+
