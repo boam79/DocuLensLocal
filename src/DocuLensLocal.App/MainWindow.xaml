@@ -1,12 +1,38 @@
 ﻿<Window x:Class="DocuLensLocal.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:DocuLensLocal.App"
-        mc:Ignorable="d"
-        Title="DocuLens Local" Height="450" Width="800">
-    <Grid>
-
+        Title="DocuLens Local"
+        Height="480"
+        Width="640"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="32">
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"
+                       Text="인덱싱할 폴더를 선택하세요" />
+            <TextBlock Margin="0,16,0,0" FontSize="14" TextWrapping="Wrap"
+                       Text="검색할 PDF가 들어 있는 폴더를 선택하세요. 이 컴퓨터의 폴더 이름은 ‘계약서’가 아니어도 됩니다." />
+            <TextBlock Margin="0,12,0,0" FontSize="13" Foreground="#555" TextWrapping="Wrap"
+                       Text="다른 컴퓨터에서는 폴더 이름과 위치가 다를 수 있습니다. 그 컴퓨터에 있는 PDF 폴더를 새로 선택하면 됩니다." />
+            <TextBlock x:Name="SelectedFolderText" Margin="0,20,0,0" FontSize="13" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                <Button x:Name="SelectFolderButton"
+                        Content="폴더 선택"
+                        Width="140"
+                        Height="32"
+                        HorizontalAlignment="Left"
+                        Click="SelectFolderButton_OnClick" />
+                <Button x:Name="IndexButton"
+                        Content="인덱싱"
+                        Width="140"
+                        Height="32"
+                        Margin="12,0,0,0"
+                        HorizontalAlignment="Left"
+                        IsEnabled="False"
+                        Click="IndexButton_OnClick" />
+            </StackPanel>
+            <TextBlock x:Name="IndexCountText" Margin="0,24,0,0" FontSize="13" Text="건수: —" />
+            <TextBlock x:Name="IndexCurrentFileText" Margin="0,8,0,0" FontSize="13" Text="현재 파일: —" />
+            <TextBlock x:Name="IndexStatusText" Margin="0,8,0,0" FontSize="13" Text="폴더를 선택한 뒤 인덱싱을 누르세요." />
+        </StackPanel>
     </Grid>
 </Window>

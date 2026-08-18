@@ -8,15 +8,19 @@ Windows 10/11용 설치형 PDF 검색기입니다. 계약서·MOU 같은 PDF를 
 
 ## 설치 파일 받기
 
-Windows 64비트용 설치 파일입니다. .NET을 따로 설치하지 않아도 됩니다.
+설치 파일 직접 주소:
+
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.1/DocuLensLocal-win-Setup.exe
+
+GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 
 - 릴리스 목록: https://github.com/boam79/DocuLensLocal/releases
-- 최신 설치 파일: https://github.com/boam79/DocuLensLocal/releases/latest
-- 설치 실행 파일 이름: `DocuLensLocal-win-Setup.exe`
+- 최신 릴리스: https://github.com/boam79/DocuLensLocal/releases/latest
+- 파일 이름: `DocuLensLocal-win-Setup.exe`
 
-받은 `DocuLensLocal-win-Setup.exe`를 실행하면 설치됩니다. 코드 서명이 없어 Windows가 경고를 띄울 수 있습니다. 추가 정보를 연 뒤 실행을 선택하면 됩니다.
+받은 파일을 실행하면 설치 화면(진행 표시)이 나옵니다. 코드 서명이 없어 Windows가 경고를 띄울 수 있습니다. 추가 정보를 연 뒤 실행을 선택하세요.
 
-업데이트도 같은 Releases 경로를 사용합니다. PDF와 검색 인덱스는 전송하지 않습니다.
+설치가 끝나면 **인덱싱할 폴더를 선택하세요** 창이 뜹니다. 빈 화면이 아니라 이 안내가 보여야 설치가 끝난 것입니다.
 
 다른 컴퓨터에 쓰려면 그 컴퓨터에도 이 설치 파일을 받아 설치하고, 그 PC에서 열 수 있는 PDF 폴더를 선택하세요. 폴더 이름이 `계약서`가 아니어도 됩니다.
 
