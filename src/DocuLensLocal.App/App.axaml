@@ -1,0 +1,160 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="DocuLensLocal.App.App"
+             RequestedThemeVariant="Light">
+    <Application.Resources>
+        <SolidColorBrush x:Key="AccentBrush" Color="#0096A6"/>
+        <SolidColorBrush x:Key="AccentDarkBrush" Color="#007F8C"/>
+        <SolidColorBrush x:Key="PageBrush" Color="#F5F7F9"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#64748B"/>
+        <SolidColorBrush x:Key="TitleBrush" Color="#0F172A"/>
+        <SolidColorBrush x:Key="LineBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="ChipBrush" Color="#CCFBF1"/>
+        <SolidColorBrush x:Key="ChipTextBrush" Color="#0F766E"/>
+        <SolidColorBrush x:Key="VersionChipBrush" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="VersionChipTextBrush" Color="#94A3B8"/>
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="18,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="10"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ Border#Bd">
+            <Setter Property="Background" Value="{StaticResource AccentDarkBrush}"/>
+        </Style>
+        <Style Selector="Button.primary:disabled /template/ Border#Bd">
+            <Setter Property="Opacity" Value="0.45"/>
+        </Style>
+
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentDarkBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{StaticResource AccentBrush}"
+                            BorderThickness="1.5"
+                            CornerRadius="10"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.secondary:pointerover /template/ Border#Bd">
+            <Setter Property="Background" Value="{StaticResource ChipBrush}"/>
+        </Style>
+        <Style Selector="Button.secondary:disabled /template/ Border#Bd">
+            <Setter Property="Opacity" Value="0.45"/>
+        </Style>
+
+        <Style Selector="Button.fullwidth">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="18,14"/>
+            <Setter Property="FontSize" Value="15"/>
+        </Style>
+
+        <Style Selector="RadioButton.navtab">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <StackPanel>
+                        <Border Padding="2,8">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <Border x:Name="Underline" Height="4" CornerRadius="2" Background="Transparent"/>
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.navtab:checked">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+        </Style>
+        <Style Selector="RadioButton.navtab:checked /template/ Border#Underline">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        </Style>
+        <Style Selector="RadioButton.navtab:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+        </Style>
+
+        <Style Selector="TextBox.bare">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="32"/>
+            <Setter Property="BoxShadow" Value="0 3 22 0 #1A0F172A"/>
+        </Style>
+
+        <Style Selector="ListBox.search">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+
+        <Style Selector="ListBox.search ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border x:Name="ItemBd"
+                            Background="White"
+                            BorderBrush="{StaticResource LineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="14,12">
+                        <ContentPresenter/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ListBox.search ListBoxItem:pointerover /template/ Border#ItemBd">
+            <Setter Property="Background" Value="#F0FDFA"/>
+            <Setter Property="BorderBrush" Value="#99F6E4"/>
+        </Style>
+        <Style Selector="ListBox.search ListBoxItem:selected /template/ Border#ItemBd">
+            <Setter Property="Background" Value="#CCFBF1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        </Style>
+
+        <Style Selector="Ellipse.current">
+            <Setter Property="Fill" Value="{StaticResource AccentBrush}"/>
+        </Style>
+    </Application.Styles>
+</Application>

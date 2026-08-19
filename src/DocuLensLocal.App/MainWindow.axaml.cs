@@ -1,10 +1,11 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using System.Windows;
-using System.Windows.Input;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using DocuLensLocal.Core;
-using Microsoft.Win32;
 
 namespace DocuLensLocal.App;
 
@@ -60,7 +61,7 @@ public partial class MainWindow : Window
         RefreshMainContent(resetSearch: true);
     }
 
-    private void NavTab_OnChecked(object sender, RoutedEventArgs e)
+    private void NavTab_OnIsCheckedChanged(object? sender, RoutedEventArgs e)
     {
         if (!IsLoaded)
         {
@@ -73,11 +74,11 @@ public partial class MainWindow : Window
     private void RefreshMainContent(bool resetSearch)
     {
         var showInfo = InfoTab.IsChecked == true;
-        InfoPanel.Visibility = showInfo ? Visibility.Visible : Visibility.Collapsed;
+        InfoPanel.IsVisible = showInfo;
         if (showInfo)
         {
-            FirstRunPanel.Visibility = Visibility.Collapsed;
-            SearchPanel.Visibility = Visibility.Collapsed;
+            FirstRunPanel.IsVisible = false;
+            SearchPanel.IsVisible = false;
             return;
         }
 
@@ -92,18 +93,18 @@ public partial class MainWindow : Window
 
     private void ShowFirstRun()
     {
-        FirstRunPanel.Visibility = Visibility.Visible;
-        SearchPanel.Visibility = Visibility.Collapsed;
-        InfoPanel.Visibility = Visibility.Collapsed;
+        FirstRunPanel.IsVisible = true;
+        SearchPanel.IsVisible = false;
+        InfoPanel.IsVisible = false;
         ShowSavedFolder();
         UpdateIndexButtonState();
     }
 
     private void ShowMainSearch(bool resetSearch)
     {
-        FirstRunPanel.Visibility = Visibility.Collapsed;
-        SearchPanel.Visibility = Visibility.Visible;
-        InfoPanel.Visibility = Visibility.Collapsed;
+        FirstRunPanel.IsVisible = false;
+        SearchPanel.IsVisible = true;
+        InfoPanel.IsVisible = false;
         if (resetSearch)
         {
             SearchQueryBox.Text = string.Empty;
@@ -133,20 +134,23 @@ public partial class MainWindow : Window
         SelectFolderButton.IsEnabled = !_isIndexing;
     }
 
-    private void SelectFolderButton_OnClick(object sender, RoutedEventArgs e)
+    private async void SelectFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             Title = "인덱싱할 폴더를 선택하세요",
-        };
+            AllowMultiple = false,
+        }).ConfigureAwait(true);
 
-        if (dialog.ShowDialog() != true)
+        var folder = folders.FirstOrDefault();
+        var path = folder?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(path))
         {
             return;
         }
 
         var settings = LoadSettings();
-        settings.IndexFolder = dialog.FolderName;
+        settings.IndexFolder = path;
         SaveSettings(settings);
         ShowSavedFolder();
         UpdateIndexButtonState();
@@ -155,7 +159,7 @@ public partial class MainWindow : Window
         IndexCurrentFileText.Text = "현재 파일: —";
     }
 
-    private async void IndexButton_OnClick(object sender, RoutedEventArgs e)
+    private async void IndexButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var folder = LoadSettings().IndexFolder;
         if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
@@ -217,9 +221,9 @@ public partial class MainWindow : Window
         ShowMainSearch(resetSearch: true);
     }
 
-    private void SearchButton_OnClick(object sender, RoutedEventArgs e) => RunSearch();
+    private void SearchButton_OnClick(object? sender, RoutedEventArgs e) => RunSearch();
 
-    private void SearchQueryBox_OnKeyDown(object sender, KeyEventArgs e)
+    private void SearchQueryBox_OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
         {
@@ -228,7 +232,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ChangeFolderButton_OnClick(object sender, RoutedEventArgs e)
+    private void ChangeFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
         _showMainSearch = false;
         SearchTab.IsChecked = true;
@@ -236,7 +240,7 @@ public partial class MainWindow : Window
         IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 다시 시작합니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
     }
 
-    private async void UpdateButton_OnClick(object sender, RoutedEventArgs e)
+    private async void UpdateButton_OnClick(object? sender, RoutedEventArgs e)
     {
         UpdateButton.IsEnabled = false;
         UpdateStatusText.Text = "업데이트를 확인하는 중…";
@@ -275,14 +279,14 @@ public partial class MainWindow : Window
 
         if (matches.Count > 0)
         {
-            SearchEmptyText.Visibility = Visibility.Collapsed;
+            SearchEmptyText.IsVisible = false;
             return;
         }
 
         SearchEmptyText.Text = all.Count == 0
             ? "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다."
             : "조건에 맞는 파일이 없습니다.";
-        SearchEmptyText.Visibility = Visibility.Visible;
+        SearchEmptyText.IsVisible = true;
     }
 
     private static string FormatCompleteStatus(int errorCount) =>

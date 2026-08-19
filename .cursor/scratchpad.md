@@ -33,6 +33,7 @@
 - [ ] 자연어 파일명 검색(버스 광고 찾아줘) — 구현·테스트 통과. 사용자 확인 대기 (완료 표시 금지)
 - [ ] PDFium 본문 추출
 - [ ] OCR
+- [ ] macOS 개발·실행 — Avalonia `net10.0`, `dotnet test` 37/37, App 빌드 성공. 사용자 Mac에서 `dotnet run` 확인 대기 (완료 표시 금지)
 
 ## Executor's Feedback or Assistance Requests
 
@@ -94,12 +95,41 @@
   - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.5/DocuLensLocal-win-Setup.exe (HEAD 302, follow 200, 72880377 bytes)
   - 0.1.4 대비: 「버스 광고 찾아줘」가 파일명 키워드(버스/광고)로 검색됨. 설치 페이로드만 업로드(PDF/인덱스 없음).
   - Planner에게 설치본 수동 확인 요청. 완료 표시는 사용자 확인 후.
+- 2026-08-19 (macOS Executor): WPF(`net10.0-windows`)를 Avalonia 11.3.20(`net10.0`)으로 바꿔 Windows·Mac에서 같은 앱을 빌드·실행하게 함.
+  - `dotnet test` 37/37 (Linux 클라우드). `dotnet build` App 0 warning.
+  - 인덱스 경로: Windows `%LOCALAPPDATA%\DocuLensLocal`, Mac `~/Library/Application Support/DocuLensLocal`.
+  - pack.ps1은 PATH의 `dotnet` + OS별 RID(`win-x64`/`osx-arm64`/`osx-x64`). `scripts/pack.sh` 추가.
+  - Mac 설치 pkg는 `assets/app.icns` + 실제 Mac이 필요. 개발 테스트는 `dotnet run --project src/DocuLensLocal.App`.
+  - 버전 선언 0.1.6. GitHub Releases 업로드는 하지 않음.
+  - Planner/사용자에게 확인 요청: Mac에서 SDK 10 설치 후 `dotnet test`와 앱 실행, 폴더 선택·인덱싱·검색.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.5 업로드 완료, 사용자 수동 확인 대기)
-- origin/main: `77472ef`. 릴리스 태그: v0.1.5
-- 다음: 사용자가 Debug 또는 설치본에서 「버스 광고 찾아줘」로 버스/광고 파일명이 나오는지 확인한 뒤 Planner가 완료 표시.
+- 모드: **Executor** (macOS 개발·실행 구현 완료, 사용자 Mac 수동 확인 대기)
+- 브랜치: `cursor/macos-avalonia-dev-3495`
+- origin/main: `ebc6ee9`. 릴리스 태그: v0.1.5
+- 다음: 사용자가 Mac에서 .NET 10 SDK 설치 후 `dotnet test` / `dotnet run --project src/DocuLensLocal.App` 확인. Planner 완료 표시는 사용자 확인 후.
+
+---
+
+## Background and Motivation (2026-08-19 추가)
+
+사용자 요청: Windows에서 시작한 프로젝트를 **Mac에서도 개발·프로그램 테스트**할 수 있게 한다. 저장소: https://github.com/boam79/DocuLensLocal.git
+
+원인: `DocuLensLocal.App`이 `net10.0-windows` + WPF라 macOS/Linux에서 빌드·실행이 불가하다. `scripts/pack.ps1`도 `C:\Program Files\dotnet\dotnet.exe`에 고정되어 있다.
+
+## Key Challenges and Analysis (2026-08-19 추가)
+
+- WPF는 Windows 전용. Mac에서 GUI를 돌리려면 Avalonia 같은 크로스플랫폼 UI가 필요하다.
+- Core/Worker/Tests는 이미 `net10.0`이라 경로만 OS API(`LocalApplicationData`)를 쓰면 Mac·Linux에서도 동작한다.
+- Velopack Mac 패키징은 **Mac에서만** 가능. 개발·테스트는 `dotnet run`으로 충분하다.
+- 인덱스는 Windows `%LOCALAPPDATA%\DocuLensLocal`, Mac `~/Library/Application Support/DocuLensLocal`.
+
+## High-level Task Breakdown (2026-08-19)
+
+### Task M — macOS 개발·실행
+
+- 성공 기준: `dotnet test`가 Linux/Mac에서 통과. App이 `net10.0`(WPF 아님). `dotnet build` App 성공. README에 Mac 실행 방법. pack 스크립트가 OS별 RID를 고름.
 
 ## Lessons
 
@@ -110,4 +140,6 @@
 - 인덱싱 `완료`는 최초실행 화면의 종착점이 아니다. `Start` 성공(`IsCompleted`)이면 검색 화면으로 넘겨야 한다. 0건도 동일. 재시작은 `index.db` 문서 수 또는 `AppSettings.IndexCompleted`로 판단한다.
 - Velopack `UpdateManager.IsInstalled`가 false인 Debug exe에서는 업데이트를 적용하지 말고, 「최신 버전입니다.」로 위장하지 않는다. 공개 저장소 확인은 `GithubSource(repoUrl, accessToken: null, prerelease: false)`.
 - 한국어 NL 파일명 검색은 문장 전체 LIKE가 아니라 토큰(버스/광고) AND→OR. 실제 276건 인덱스에는 버스+광고 동시 파일명이 없어 OR 폴백이 필수다.
+- WPF(`net10.0-windows`)는 Mac에서 빌드·실행이 안 된다. 데스크톱 UI는 Avalonia + `net10.0`으로 둔다. Mac 경로는 `LocalApplicationData` → `~/Library/Application Support/DocuLensLocal`.
+- pack.ps1은 PATH의 `dotnet`을 쓰고, 없으면 Windows 기본 경로만 보조로 쓴다. Mac 설치 패키지(vpk osx)는 Mac에서만 만들 수 있다.
 

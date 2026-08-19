@@ -24,4 +24,19 @@ public class AppPathsTests
             AppPaths.IndexDatabase,
             StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void userdata_follows_os_local_application_data()
+    {
+        var expected = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "DocuLensLocal",
+            "userdata");
+
+        Assert.Equal(expected, AppPaths.UserData);
+        Assert.False(
+            AppPaths.UserData.Contains(
+                $"{Path.DirectorySeparatorChar}current{Path.DirectorySeparatorChar}",
+                StringComparison.OrdinalIgnoreCase));
+    }
 }

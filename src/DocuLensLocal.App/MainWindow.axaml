@@ -1,6 +1,6 @@
-﻿<Window x:Class="DocuLensLocal.App.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DocuLensLocal.App.MainWindow"
         Title="DocuLens Local"
         Height="640"
         Width="800"
@@ -17,20 +17,20 @@
 
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,0,8,16">
             <RadioButton x:Name="SearchTab"
-                         Style="{StaticResource NavTabStyle}"
+                         Classes="navtab"
                          Content="검색"
                          GroupName="MainNav"
                          IsChecked="True"
-                         Checked="NavTab_OnChecked"/>
+                         IsCheckedChanged="NavTab_OnIsCheckedChanged"/>
             <RadioButton x:Name="InfoTab"
-                         Style="{StaticResource NavTabStyle}"
+                         Classes="navtab"
                          Content="정보"
                          GroupName="MainNav"
                          Margin="20,0,0,0"
-                         Checked="NavTab_OnChecked"/>
+                         IsCheckedChanged="NavTab_OnIsCheckedChanged"/>
         </StackPanel>
 
-        <Border Grid.Row="1" Style="{StaticResource CardBorder}">
+        <Border Grid.Row="1" Classes="card">
             <Grid>
                 <Grid x:Name="FirstRunPanel">
                     <StackPanel VerticalAlignment="Center">
@@ -56,12 +56,12 @@
                                    TextWrapping="Wrap"/>
                         <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                             <Button x:Name="SelectFolderButton"
-                                    Style="{StaticResource PrimaryButton}"
+                                    Classes="primary"
                                     Content="폴더 선택"
                                     MinWidth="140"
                                     Click="SelectFolderButton_OnClick"/>
                             <Button x:Name="IndexButton"
-                                    Style="{StaticResource SecondaryButton}"
+                                    Classes="secondary"
                                     Content="인덱싱"
                                     MinWidth="140"
                                     Margin="12,0,0,0"
@@ -74,7 +74,7 @@
                     </StackPanel>
                 </Grid>
 
-                <Grid x:Name="SearchPanel" Visibility="Collapsed">
+                <Grid x:Name="SearchPanel" IsVisible="False">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -111,20 +111,20 @@
                         <DockPanel>
                             <Button x:Name="SearchButton"
                                     DockPanel.Dock="Right"
-                                    Style="{StaticResource PrimaryButton}"
+                                    Classes="primary"
                                     Content="검색"
                                     Margin="6"
                                     MinWidth="88"
                                     Click="SearchButton_OnClick"/>
                             <TextBox x:Name="SearchQueryBox"
-                                     Style="{StaticResource BareTextBox}"
+                                     Classes="bare"
                                      VerticalAlignment="Stretch"
                                      KeyDown="SearchQueryBox_OnKeyDown"/>
                         </DockPanel>
                     </Border>
 
                     <Grid Grid.Row="2" Margin="0,18,0,0">
-                        <ListBox x:Name="SearchResultsList" Style="{StaticResource SearchListBox}">
+                        <ListBox x:Name="SearchResultsList" Classes="search">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel LastChildFill="True">
@@ -164,20 +164,20 @@
                                    Foreground="{StaticResource MutedBrush}"
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"
-                                   Visibility="Collapsed"
+                                   IsVisible="False"
                                    Text="검색 결과가 없습니다."/>
                     </Grid>
 
                     <Button x:Name="ChangeFolderButton"
                             Grid.Row="3"
-                            Style="{StaticResource SecondaryButton}"
+                            Classes="secondary"
                             Margin="0,16,0,0"
                             Content="폴더 변경 / 다시 인덱싱"
                             HorizontalAlignment="Left"
                             Click="ChangeFolderButton_OnClick"/>
                 </Grid>
 
-                <Grid x:Name="InfoPanel" Visibility="Collapsed">
+                <Grid x:Name="InfoPanel" IsVisible="False">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -228,18 +228,8 @@
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Stretch"
                                                        Fill="{StaticResource AccentBrush}"
-                                                       Margin="0,8,0,-16">
-                                                <Rectangle.Style>
-                                                    <Style TargetType="Rectangle">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsLast}" Value="True">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Rectangle.Style>
-                                            </Rectangle>
+                                                       Margin="0,8,0,-16"
+                                                       IsVisible="{Binding !IsLast}"/>
                                             <Ellipse Width="12"
                                                      Height="12"
                                                      HorizontalAlignment="Center"
@@ -247,18 +237,8 @@
                                                      Margin="0,2,0,0"
                                                      Stroke="{StaticResource AccentBrush}"
                                                      StrokeThickness="2"
-                                                     SnapsToDevicePixels="True">
-                                                <Ellipse.Style>
-                                                    <Style TargetType="Ellipse">
-                                                        <Setter Property="Fill" Value="White"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                                <Setter Property="Fill" Value="{StaticResource AccentBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Ellipse.Style>
-                                            </Ellipse>
+                                                     Fill="White"
+                                                     Classes.current="{Binding IsCurrent}"/>
                                             <Border Grid.Column="1"
                                                     Background="{StaticResource VersionChipBrush}"
                                                     CornerRadius="6"
@@ -284,7 +264,7 @@
 
                     <StackPanel Grid.Row="2" Margin="0,16,0,0">
                         <Button x:Name="UpdateButton"
-                                Style="{StaticResource FullWidthPrimaryButton}"
+                                Classes="primary fullwidth"
                                 Content="업데이트"
                                 Click="UpdateButton_OnClick"/>
                         <TextBlock x:Name="UpdateStatusText"
