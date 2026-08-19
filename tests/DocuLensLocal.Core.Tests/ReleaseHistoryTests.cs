@@ -15,7 +15,7 @@ public class ReleaseHistoryTests
     [Fact]
     public void known_releases_keep_short_korean_notes()
     {
-        Assert.Equal("Windows·macOS 공통 앱", Note("0.1.6").SummaryKo);
+        Assert.Equal("Mac에서 개발·실행", Note("0.1.6").SummaryKo);
         Assert.Equal("자연어 파일명 검색", Note("0.1.5").SummaryKo);
         Assert.Equal("정보 탭·모던 UI", Note("0.1.4").SummaryKo);
         Assert.Equal("인덱싱 완료 후 검색 본화면", Note("0.1.3").SummaryKo);

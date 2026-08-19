@@ -24,15 +24,16 @@ public class SolutionSmokeTests
     }
 
     [Fact]
-    public void pack_scripts_do_not_hardcode_windows_dotnet_path_only()
+    public void pack_script_finds_dotnet_on_path_and_still_builds_windows_installer()
     {
         var packPs1 = File.ReadAllText(Path.Combine(FindRepoRoot(), "scripts", "pack.ps1"));
-        var packSh = File.ReadAllText(Path.Combine(FindRepoRoot(), "scripts", "pack.sh"));
 
         Assert.DoesNotContain(@"$dotnet = ""C:\Program Files\dotnet\dotnet.exe""", packPs1, StringComparison.Ordinal);
-        Assert.Contains("osx-arm64", packPs1, StringComparison.Ordinal);
-        Assert.Contains("osx-x64", packSh, StringComparison.Ordinal);
-        Assert.Contains("dotnet", packSh, StringComparison.Ordinal);
+        Assert.Contains("Resolve-Dotnet", packPs1, StringComparison.Ordinal);
+        Assert.Contains("win-x64", packPs1, StringComparison.Ordinal);
+        Assert.Contains("DocuLensLocal.exe", packPs1, StringComparison.Ordinal);
+        Assert.DoesNotContain("osx-arm64", packPs1, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(FindRepoRoot(), "scripts", "pack.sh")));
     }
 
     private static string FindRepoRoot()

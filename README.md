@@ -1,14 +1,16 @@
 # DocuLens Local
 
-Windows와 macOS에서 쓰는 설치형 PDF 검색기입니다. 계약서·MOU 같은 PDF를 **원래 폴더에 그대로 둔 채** 인덱싱하고, 파일명·본문·날짜로 찾습니다. 문서 원문은 외부 서버로 보내지 않습니다.
+Windows 10/11용 설치형 PDF 검색기입니다. 계약서·MOU 같은 PDF를 **원래 폴더에 그대로 둔 채** 인덱싱하고, 파일명·본문·날짜로 찾습니다. 문서 원문은 외부 서버로 보내지 않습니다.
 
-- 대상: Windows 10/11 64비트, macOS 12+(Apple Silicon·Intel)
+개발은 Windows와 macOS 모두에서 `dotnet test` / `dotnet run`으로 합니다. Mac용 설치 파일은 만들지 않습니다.
+
+- 설치 대상: Windows 10/11 64비트
 - 스택: .NET 10, Avalonia, 로컬 SQLite
 - 저장소: https://github.com/boam79/DocuLensLocal
 
 ## 설치 파일 받기
 
-Windows 설치 파일 직접 주소:
+설치 파일 직접 주소:
 
 - https://github.com/boam79/DocuLensLocal/releases/download/v0.1.5/DocuLensLocal-win-Setup.exe
 
@@ -16,15 +18,13 @@ GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니
 
 - 릴리스 목록: https://github.com/boam79/DocuLensLocal/releases
 - 최신 릴리스: https://github.com/boam79/DocuLensLocal/releases/latest
-- Windows 파일 이름: `DocuLensLocal-win-Setup.exe`
+- 파일 이름: `DocuLensLocal-win-Setup.exe`
 
 받은 파일을 실행하면 설치 화면(진행 표시)이 나옵니다. 코드 서명이 없어 Windows가 경고를 띄울 수 있습니다. 추가 정보를 연 뒤 실행을 선택하세요.
 
 설치가 끝나면 **인덱싱할 폴더를 선택하세요** 창이 뜹니다. 빈 화면이 아니라 이 안내가 보여야 설치가 끝난 것입니다.
 
 다른 컴퓨터에 쓰려면 그 컴퓨터에도 이 설치 파일을 받아 설치하고, 그 PC에서 열 수 있는 PDF 폴더를 선택하세요. 폴더 이름이 `계약서`가 아니어도 됩니다.
-
-macOS 설치 패키지는 아직 GitHub Releases에 없습니다. Mac에서는 아래 **개발용으로 실행**으로 프로그램을 열고 테스트하세요.
 
 ## 최초 실행
 
@@ -46,14 +46,6 @@ macOS Homebrew 예:
 brew install --cask dotnet-sdk
 ```
 
-설치 확인:
-
-```bash
-dotnet --version
-```
-
-`10.`으로 시작하는 버전이면 됩니다.
-
 ```bash
 git clone https://github.com/boam79/DocuLensLocal.git
 cd DocuLensLocal
@@ -62,13 +54,13 @@ dotnet build
 dotnet run --project src/DocuLensLocal.App
 ```
 
-Windows PowerShell에서도 같은 `dotnet` 명령을 씁니다.
+Windows PowerShell에서도 같은 `dotnet` 명령을 씁니다. Mac에서는 설치 없이 이 명령으로 앱을 띄워 기능을 확인하면 됩니다.
 
 솔루션 파일은 `DocuLensLocal.slnx` 입니다.
 
 | 프로젝트 | 역할 |
 |---|---|
-| `src/DocuLensLocal.App` | Avalonia 화면 (Windows·macOS) |
+| `src/DocuLensLocal.App` | 화면 (Windows·macOS에서 실행) |
 | `src/DocuLensLocal.Worker` | 인덱싱·OCR 백그라운드 |
 | `src/DocuLensLocal.Core` | 공통 로직 |
 | `tests/DocuLensLocal.Core.Tests` | 테스트 |
@@ -78,18 +70,10 @@ Windows PowerShell에서도 같은 `dotnet` 명령을 씁니다.
 - Windows: `%LOCALAPPDATA%\DocuLensLocal\userdata`
 - macOS: `~/Library/Application Support/DocuLensLocal/userdata`
 
-설치 파일을 이 저장소에서 다시 만들려면:
-
-Windows (PowerShell):
+Windows 설치 파일을 이 저장소에서 다시 만들려면:
 
 ```powershell
 ./scripts/pack.ps1
 ```
 
-macOS / Linux:
-
-```bash
-./scripts/pack.sh
-```
-
-Windows 결과는 `artifacts/Releases/DocuLensLocal-win-Setup.exe` 입니다. macOS 설치 패키지는 Mac에서 `assets/app.icns`가 있을 때 만들어집니다. 아이콘이 없으면 publish만 하고, 개발 테스트는 `dotnet run`을 쓰세요.
+결과는 `artifacts/Releases/DocuLensLocal-win-Setup.exe` 입니다.

@@ -33,7 +33,7 @@
 - [ ] 자연어 파일명 검색(버스 광고 찾아줘) — 구현·테스트 통과. 사용자 확인 대기 (완료 표시 금지)
 - [ ] PDFium 본문 추출
 - [ ] OCR
-- [ ] macOS 개발·실행 — Avalonia `net10.0`, `dotnet test` 37/37, App 빌드 성공. 사용자 Mac에서 `dotnet run` 확인 대기 (완료 표시 금지)
+- [ ] macOS 개발·실행 — Avalonia `net10.0`, Mac 설치 없음. `dotnet run`으로 테스트. 사용자 확인 대기 (완료 표시 금지)
 
 ## Executor's Feedback or Assistance Requests
 
@@ -102,13 +102,14 @@
   - Mac 설치 pkg는 `assets/app.icns` + 실제 Mac이 필요. 개발 테스트는 `dotnet run --project src/DocuLensLocal.App`.
   - 버전 선언 0.1.6. GitHub Releases 업로드는 하지 않음.
   - Planner/사용자에게 확인 요청: Mac에서 SDK 10 설치 후 `dotnet test`와 앱 실행, 폴더 선택·인덱싱·검색.
+- 2026-08-19 (사용자 정정): Mac 설치(.pkg)는 하지 않는다. Mac은 개발·실제 앱 테스트만. pack.sh·osx RID 패키징 제거. `pack.ps1`은 Windows Setup.exe만. README도 설치 대상은 Windows, Mac은 `dotnet run`.
 
 ## Current Status / Progress Tracking
 
 - 모드: **Executor** (macOS 개발·실행 구현 완료, 사용자 Mac 수동 확인 대기)
 - 브랜치: `cursor/macos-avalonia-dev-3495`
 - origin/main: `ebc6ee9`. 릴리스 태그: v0.1.5
-- 다음: 사용자가 Mac에서 .NET 10 SDK 설치 후 `dotnet test` / `dotnet run --project src/DocuLensLocal.App` 확인. Planner 완료 표시는 사용자 확인 후.
+- 다음: 사용자가 Mac에서 .NET 10 SDK 설치 후 `dotnet test` / `dotnet run --project src/DocuLensLocal.App`으로 기능 확인. Mac 설치는 하지 않음. Planner 완료 표시는 사용자 확인 후.
 
 ---
 
@@ -129,7 +130,7 @@
 
 ### Task M — macOS 개발·실행
 
-- 성공 기준: `dotnet test`가 Linux/Mac에서 통과. App이 `net10.0`(WPF 아님). `dotnet build` App 성공. README에 Mac 실행 방법. pack 스크립트가 OS별 RID를 고름.
+- 성공 기준: `dotnet test` 통과. App이 `net10.0`(WPF 아님). Mac에서 `dotnet run`으로 GUI 테스트. Windows 설치 팩만 `pack.ps1`. Mac 설치 파일은 만들지 않음.
 
 ## Lessons
 
@@ -141,5 +142,5 @@
 - Velopack `UpdateManager.IsInstalled`가 false인 Debug exe에서는 업데이트를 적용하지 말고, 「최신 버전입니다.」로 위장하지 않는다. 공개 저장소 확인은 `GithubSource(repoUrl, accessToken: null, prerelease: false)`.
 - 한국어 NL 파일명 검색은 문장 전체 LIKE가 아니라 토큰(버스/광고) AND→OR. 실제 276건 인덱스에는 버스+광고 동시 파일명이 없어 OR 폴백이 필수다.
 - WPF(`net10.0-windows`)는 Mac에서 빌드·실행이 안 된다. 데스크톱 UI는 Avalonia + `net10.0`으로 둔다. Mac 경로는 `LocalApplicationData` → `~/Library/Application Support/DocuLensLocal`.
-- pack.ps1은 PATH의 `dotnet`을 쓰고, 없으면 Windows 기본 경로만 보조로 쓴다. Mac 설치 패키지(vpk osx)는 Mac에서만 만들 수 있다.
+- 사용자는 Mac 설치본을 원하지 않는다. Mac은 `dotnet run`으로 개발·기능 테스트만. `pack.ps1`은 Windows Setup.exe만 만든다.
 
