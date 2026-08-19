@@ -5,6 +5,7 @@ public sealed class IndexingProgress
     public int FoundCount { get; init; }
     public int ProcessedCount { get; init; }
     public string? CurrentFile { get; init; }
+    public string? PhaseKo { get; init; }
     public IReadOnlyList<IndexingError> Errors { get; init; } = [];
     public bool IsCompleted { get; init; }
 }
@@ -30,7 +31,10 @@ public sealed class IndexedDocument
     public long SizeBytes { get; init; }
     public DateTimeOffset LastWriteTimeUtc { get; init; }
     public DateTimeOffset IndexedAtUtc { get; init; }
+    public string BodyText { get; init; } = string.Empty;
+    public int PageCount { get; init; }
+    public int OcrPageCount { get; init; }
 
-    /// <summary>Path/filename index is complete. PDFium text extract is still pending.</summary>
+    /// <summary>filename_only, indexed, or ocr — metadata is always stored.</summary>
     public string Status { get; init; } = "indexed";
 }

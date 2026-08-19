@@ -199,9 +199,9 @@ public partial class MainWindow : Window
         IndexCurrentFileText.Text = string.IsNullOrWhiteSpace(progress.CurrentFile)
             ? "현재 파일: —"
             : $"현재 파일: {Path.GetFileName(progress.CurrentFile)}";
-        IndexStatusText.Text = progress.IsCompleted
+            IndexStatusText.Text = progress.IsCompleted
             ? FormatCompleteStatus(progress.Errors.Count)
-            : "인덱싱 중…";
+            : string.IsNullOrWhiteSpace(progress.PhaseKo) ? "인덱싱 중…" : progress.PhaseKo;
     }
 
     private void ShowResult(IndexingResult result)
@@ -264,20 +264,34 @@ public partial class MainWindow : Window
     {
         var all = _indexing.GetIndexedDocuments();
         var query = SearchQueryBox.Text;
-        var matches = string.IsNullOrWhiteSpace(query)
-            ? all
-            : _indexing.SearchByFileName(query);
-
-        IndexedSummaryText.Text = $"인덱싱 완료 · {all.Count}건";
-        SearchResultsList.ItemsSource = matches
-            .Select(doc => new SearchResultRow
+        IReadOnlyList<SearchResultRow> rows;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            rows = all.Select(doc => new SearchResultRow
             {
                 FileName = Path.GetFileName(doc.FilePath),
                 FilePath = doc.FilePath,
-            })
-            .ToList();
+                Snippet = EvidenceSnippet.From(doc.BodyText, []),
+                MatchLabel = doc.OcrPageCount > 0 ? "OCR 포함" : (string.IsNullOrWhiteSpace(doc.BodyText) ? "파일명만" : "본문 인덱스"),
+                HasSnippet = !string.IsNullOrWhiteSpace(doc.BodyText),
+            }).ToList();
+        }
+        else
+        {
+            rows = _indexing.Search(query).Select(hit => new SearchResultRow
+            {
+                FileName = Path.GetFileName(hit.Document.FilePath),
+                FilePath = hit.Document.FilePath,
+                Snippet = hit.Snippet,
+                MatchLabel = hit.MatchLabelKo,
+                HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
+            }).ToList();
+        }
 
-        if (matches.Count > 0)
+        IndexedSummaryText.Text = $"인덱싱 완료 · {all.Count}건 · 파일명+본문";
+        SearchResultsList.ItemsSource = rows;
+
+        if (rows.Count > 0)
         {
             SearchEmptyText.IsVisible = false;
             return;
@@ -285,8 +299,29 @@ public partial class MainWindow : Window
 
         SearchEmptyText.Text = all.Count == 0
             ? "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다."
-            : "조건에 맞는 파일이 없습니다.";
+            : "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";
         SearchEmptyText.IsVisible = true;
+    }
+
+    private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (SearchResultsList.SelectedItem is not SearchResultRow row || !File.Exists(row.FilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(row.FilePath)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            SearchEmptyText.Text = $"파일을 열지 못했습니다: {ex.Message}";
+            SearchEmptyText.IsVisible = true;
+        }
     }
 
     private static string FormatCompleteStatus(int errorCount) =>
@@ -313,6 +348,9 @@ public partial class MainWindow : Window
     {
         public required string FileName { get; init; }
         public required string FilePath { get; init; }
+        public string Snippet { get; init; } = string.Empty;
+        public string MatchLabel { get; init; } = string.Empty;
+        public bool HasSnippet { get; init; }
     }
 
     private sealed class HistoryRow

@@ -43,7 +43,7 @@
                                    FontSize="14"
                                    Foreground="{StaticResource TitleBrush}"
                                    TextWrapping="Wrap"
-                                   Text="검색할 PDF가 들어 있는 폴더를 선택하세요. 이 컴퓨터의 폴더 이름은 ‘계약서’가 아니어도 됩니다."/>
+                                   Text="검색할 PDF가 들어 있는 폴더를 선택하세요. 파일 이름만이 아니라 계약서 본문·스캔 OCR 글자까지 이 컴퓨터에서만 찾아 둡니다."/>
                         <TextBlock Margin="0,12,0,0"
                                    FontSize="13"
                                    Foreground="{StaticResource MutedBrush}"
@@ -118,13 +118,14 @@
                                     Click="SearchButton_OnClick"/>
                             <TextBox x:Name="SearchQueryBox"
                                      Classes="bare"
+                                     Watermark="파일명·본문으로 찾기  (예: 버스 광고 찾아줘)"
                                      VerticalAlignment="Stretch"
                                      KeyDown="SearchQueryBox_OnKeyDown"/>
                         </DockPanel>
                     </Border>
 
                     <Grid Grid.Row="2" Margin="0,18,0,0">
-                        <ListBox x:Name="SearchResultsList" Classes="search">
+                        <ListBox x:Name="SearchResultsList" Classes="search" DoubleTapped="SearchResultsList_OnDoubleTapped">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel LastChildFill="True">
@@ -143,10 +144,29 @@
                                                        VerticalAlignment="Center"/>
                                         </Border>
                                         <StackPanel>
-                                            <TextBlock FontWeight="SemiBold"
-                                                       FontSize="14"
+                                            <DockPanel LastChildFill="True">
+                                                <Border DockPanel.Dock="Right"
+                                                        Background="{StaticResource ChipBrush}"
+                                                        CornerRadius="8"
+                                                        Padding="8,3"
+                                                        Margin="8,0,0,0"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource ChipTextBrush}"
+                                                               Text="{Binding MatchLabel}"/>
+                                                </Border>
+                                                <TextBlock FontWeight="SemiBold"
+                                                           FontSize="14"
+                                                           Foreground="{StaticResource TitleBrush}"
+                                                           Text="{Binding FileName}"/>
+                                            </DockPanel>
+                                            <TextBlock Margin="0,4,0,0"
+                                                       FontSize="13"
                                                        Foreground="{StaticResource TitleBrush}"
-                                                       Text="{Binding FileName}"/>
+                                                       TextWrapping="Wrap"
+                                                       IsVisible="{Binding HasSnippet}"
+                                                       Text="{Binding Snippet}"/>
                                             <TextBlock Margin="0,4,0,0"
                                                        FontSize="12"
                                                        Foreground="{StaticResource MutedBrush}"

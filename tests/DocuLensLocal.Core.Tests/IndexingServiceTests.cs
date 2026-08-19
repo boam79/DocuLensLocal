@@ -98,7 +98,8 @@ public class IndexingServiceTests : IDisposable
         Assert.Equal(Path.GetFullPath(path), doc.FilePath);
         Assert.Equal(size, doc.SizeBytes);
         Assert.Equal(new DateTimeOffset(2024, 3, 15, 8, 30, 0, TimeSpan.Zero), doc.LastWriteTimeUtc);
-        Assert.Equal("indexed", doc.Status);
+        Assert.Equal("filename_only", doc.Status);
+        Assert.Equal(string.Empty, doc.BodyText);
     }
 
     [Fact]

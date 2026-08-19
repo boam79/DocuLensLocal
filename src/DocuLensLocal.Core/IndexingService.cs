@@ -2,16 +2,25 @@ namespace DocuLensLocal.Core;
 
 public sealed class IndexingService
 {
+    private readonly IPdfContentExtractor _extractor;
+
     public IndexingService()
         : this(AppPaths.UserData)
     {
     }
 
     public IndexingService(string userDataDirectory)
+        : this(userDataDirectory, new PdfPigContentExtractor())
+    {
+    }
+
+    public IndexingService(string userDataDirectory, IPdfContentExtractor extractor)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userDataDirectory);
+        ArgumentNullException.ThrowIfNull(extractor);
         UserDataDirectory = userDataDirectory;
         IndexDatabasePath = Path.Combine(userDataDirectory, "index.db");
+        _extractor = extractor;
     }
 
     public string UserDataDirectory { get; }
@@ -42,18 +51,18 @@ public sealed class IndexingService
 
         var errors = new List<IndexingError>();
         var documents = new List<IndexedDocument>();
-        Report(progress, pdfs.Length, processedCount: 0, currentFile: null, errors, completed: false);
+        Report(progress, pdfs.Length, processedCount: 0, currentFile: null, "PDF를 찾는 중", errors, completed: false);
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
 
         foreach (var pdf in pdfs)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Report(progress, pdfs.Length, documents.Count, pdf, errors, completed: false);
+            Report(progress, pdfs.Length, documents.Count, pdf, "본문 추출·OCR", errors, completed: false);
 
             try
             {
-                var document = IndexPdfReadOnly(pdf);
+                var document = IndexPdfReadOnly(pdf, cancellationToken);
                 store.Upsert(document);
                 documents.Add(document);
             }
@@ -66,7 +75,7 @@ public sealed class IndexingService
                 });
             }
 
-            Report(progress, pdfs.Length, documents.Count, pdf, errors, completed: false);
+            Report(progress, pdfs.Length, documents.Count, pdf, "본문 추출·OCR", errors, completed: false);
         }
 
         var result = new IndexingResult
@@ -77,7 +86,7 @@ public sealed class IndexingService
             Documents = documents.ToArray(),
             IsCompleted = true,
         };
-        Report(progress, result.FoundCount, result.ProcessedCount, currentFile: null, errors, completed: true);
+        Report(progress, result.FoundCount, result.ProcessedCount, currentFile: null, "완료", errors, completed: true);
         return result;
     }
 
@@ -92,7 +101,10 @@ public sealed class IndexingService
         return store.GetAll();
     }
 
-    public IReadOnlyList<IndexedDocument> SearchByFileName(string query)
+    public IReadOnlyList<IndexedDocument> SearchByFileName(string query) =>
+        Search(query).Select(hit => hit.Document).ToList();
+
+    public IReadOnlyList<SearchHit> Search(string query)
     {
         if (string.IsNullOrWhiteSpace(query) || !File.Exists(IndexDatabasePath))
         {
@@ -100,7 +112,7 @@ public sealed class IndexingService
         }
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
-        return store.SearchByFileName(query);
+        return store.Search(query);
     }
 
     private static IEnumerable<string> DiscoverPdfs(string folderPath) =>
@@ -109,7 +121,7 @@ public sealed class IndexingService
             .Select(Path.GetFullPath)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
-    private static IndexedDocument IndexPdfReadOnly(string path)
+    private IndexedDocument IndexPdfReadOnly(string path, CancellationToken cancellationToken)
     {
         if (!File.Exists(path))
         {
@@ -122,15 +134,24 @@ public sealed class IndexingService
         }
 
         var info = new FileInfo(path);
+        var extracted = _extractor.Extract(path, cancellationToken);
+        var hasBody = !string.IsNullOrWhiteSpace(extracted.BodyText);
+        var status = extracted.OcrPageCount > 0
+            ? "ocr"
+            : hasBody
+                ? "indexed"
+                : "filename_only";
 
-        // TODO: extract text with PDFium for digital PDFs; queue scan pages for OCR.
         return new IndexedDocument
         {
             FilePath = info.FullName,
             SizeBytes = info.Length,
             LastWriteTimeUtc = new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero),
             IndexedAtUtc = DateTimeOffset.UtcNow,
-            Status = "indexed",
+            BodyText = extracted.BodyText,
+            PageCount = extracted.PageCount,
+            OcrPageCount = extracted.OcrPageCount,
+            Status = status,
         };
     }
 
@@ -139,6 +160,7 @@ public sealed class IndexingService
         int foundCount,
         int processedCount,
         string? currentFile,
+        string? phaseKo,
         IReadOnlyList<IndexingError> errors,
         bool completed)
     {
@@ -147,6 +169,7 @@ public sealed class IndexingService
             FoundCount = foundCount,
             ProcessedCount = processedCount,
             CurrentFile = currentFile,
+            PhaseKo = phaseKo,
             Errors = errors.ToArray(),
             IsCompleted = completed,
         };

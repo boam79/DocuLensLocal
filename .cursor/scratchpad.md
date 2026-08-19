@@ -31,8 +31,7 @@
 - [ ] 검색 UI 현대화 + 정보 탭(버전/히스토리/업데이트) — 구현됨. 사용자 수동 확인 대기 (완료 표시 금지)
 - [x] v0.1.4 패키징·GitHub Releases 업로드 (정보 탭 목업 3 스타일). Planner 완료 표시는 사용자 확인 후
 - [ ] 자연어 파일명 검색(버스 광고 찾아줘) — 구현·테스트 통과. 사용자 확인 대기 (완료 표시 금지)
-- [ ] PDFium 본문 추출
-- [ ] OCR
+- [ ] 본문 추출·OCR·근거 검색 — 구현·테스트 45 통과. 사용자 Mac/`dotnet run` 확인 대기 (완료 표시 금지)
 - [ ] macOS 개발·실행 — Avalonia `net10.0`, Mac 설치 없음. `dotnet run`으로 테스트. 사용자 확인 대기 (완료 표시 금지)
 
 ## Executor's Feedback or Assistance Requests
@@ -103,13 +102,18 @@
   - 버전 선언 0.1.6. GitHub Releases 업로드는 하지 않음.
   - Planner/사용자에게 확인 요청: Mac에서 SDK 10 설치 후 `dotnet test`와 앱 실행, 폴더 선택·인덱싱·검색.
 - 2026-08-19 (사용자 정정): Mac 설치(.pkg)는 하지 않는다. Mac은 개발·실제 앱 테스트만. pack.sh·osx RID 패키징 제거. `pack.ps1`은 Windows Setup.exe만. README도 설치 대상은 Windows, Mac은 `dotnet run`.
+- 2026-08-19 (본문·OCR Executor): 파일명만 저장하던 인덱스를 **본문+OCR**로 바꿈.
+  - PdfPig 디지털 텍스트. 글자 거의 없고 이미지가 있으면 Tesseract CLI(kor+eng) OCR. 원문은 서버로 안 보냄, 원본 mtime 유지.
+  - 검색: 파일명 또는 본문. 결과 칩(파일명/본문/OCR) + 근거 스니펫. 더블클릭으로 PDF 열기.
+  - `dotnet test` 45/45.
+  - 사용자 확인: 본문에만 있는 단어로 검색되는지, 스캔 PDF는 tesseract 설치 후인지.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (macOS 개발·실행 구현 완료, 사용자 Mac 수동 확인 대기)
-- 브랜치: `cursor/macos-avalonia-dev-3495`
+- 모드: **Executor** (본문 검색·OCR 구현, 사용자 확인 대기)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
 - origin/main: `ebc6ee9`. 릴리스 태그: v0.1.5
-- 다음: 사용자가 Mac에서 .NET 10 SDK 설치 후 `dotnet test` / `dotnet run --project src/DocuLensLocal.App`으로 기능 확인. Mac 설치는 하지 않음. Planner 완료 표시는 사용자 확인 후.
+- 다음: 사용자 확인 — 본문 검색·근거 문장·(Tesseract 있으면) OCR. Mac 설치는 하지 않음.
 
 ---
 
@@ -128,7 +132,23 @@
 
 ## High-level Task Breakdown (2026-08-19)
 
-### Task M — macOS 개발·실행
+## Background and Motivation (2026-08-19 본문·OCR)
+
+사용자: 프로젝트가 부족하다. 인덱싱/OCR이 제대로인지 모르겠고, 파일 검색기와 차이가 없다.
+
+원인: 인덱스가 경로·크기·mtime만 저장. 본문 추출·OCR은 stub. 검색은 파일명 LIKE뿐.
+
+차별점(이번에 구현):
+- 디지털 PDF 본문을 이 PC에서만 추출 (PdfPig)
+- 글자 없는 스캔 페이지는 로컬 Tesseract OCR
+- 파일명+본문 검색, 히트 시 근거 문장(스니펫)
+- 원문은 서버로 안 보냄, 원본 PDF 수정 없음
+
+## High-level Task Breakdown (2026-08-19 본문·OCR)
+
+### Task C — 본문 인덱스·OCR·근거 검색
+
+- 성공 기준: 본문에만 있는 단어로 검색됨. 스니펫 표시. OCR 엔진이 있으면 이미지 페이지 글자를 넣음. `dotnet test` 통과. 원본 mtime 유지.
 
 - 성공 기준: `dotnet test` 통과. App이 `net10.0`(WPF 아님). Mac에서 `dotnet run`으로 GUI 테스트. Windows 설치 팩만 `pack.ps1`. Mac 설치 파일은 만들지 않음.
 
@@ -143,4 +163,5 @@
 - 한국어 NL 파일명 검색은 문장 전체 LIKE가 아니라 토큰(버스/광고) AND→OR. 실제 276건 인덱스에는 버스+광고 동시 파일명이 없어 OR 폴백이 필수다.
 - WPF(`net10.0-windows`)는 Mac에서 빌드·실행이 안 된다. 데스크톱 UI는 Avalonia + `net10.0`으로 둔다. Mac 경로는 `LocalApplicationData` → `~/Library/Application Support/DocuLensLocal`.
 - 사용자는 Mac 설치본을 원하지 않는다. Mac은 `dotnet run`으로 개발·기능 테스트만. `pack.ps1`은 Windows Setup.exe만 만든다.
+- 파일명만 인덱싱하면 탐색기와 차별이 없다. 디지털 PDF는 PdfPig 본문, 스캔은 로컬 Tesseract. 검색 결과는 근거 스니펫이 있어야 한다.
 
