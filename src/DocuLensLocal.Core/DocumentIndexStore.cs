@@ -100,6 +100,54 @@ internal sealed class DocumentIndexStore : IDisposable
     public IReadOnlyList<IndexedDocument> SearchByFileName(string query) =>
         Search(query).Select(hit => hit.Document).ToList();
 
+    public int DeleteAll()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM documents;";
+        return cmd.ExecuteNonQuery();
+    }
+
+    public void KeepOnly(IReadOnlyCollection<string> paths)
+    {
+        using var tx = _connection.BeginTransaction();
+        using (var create = _connection.CreateCommand())
+        {
+            create.Transaction = tx;
+            create.CommandText = "CREATE TEMP TABLE IF NOT EXISTS keep_paths (path TEXT PRIMARY KEY COLLATE NOCASE);";
+            create.ExecuteNonQuery();
+        }
+
+        using (var clear = _connection.CreateCommand())
+        {
+            clear.Transaction = tx;
+            clear.CommandText = "DELETE FROM keep_paths;";
+            clear.ExecuteNonQuery();
+        }
+
+        using (var insert = _connection.CreateCommand())
+        {
+            insert.Transaction = tx;
+            insert.CommandText = "INSERT OR IGNORE INTO keep_paths(path) VALUES ($path);";
+            var parameter = insert.CreateParameter();
+            parameter.ParameterName = "$path";
+            insert.Parameters.Add(parameter);
+            foreach (var path in paths)
+            {
+                parameter.Value = path;
+                insert.ExecuteNonQuery();
+            }
+        }
+
+        using (var delete = _connection.CreateCommand())
+        {
+            delete.Transaction = tx;
+            delete.CommandText = "DELETE FROM documents WHERE path NOT IN (SELECT path FROM keep_paths);";
+            delete.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+    }
+
     public void Dispose()
     {
         try

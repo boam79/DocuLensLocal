@@ -278,8 +278,14 @@
                         <Button x:Name="ChangeFolderButton"
                                 DockPanel.Dock="Left"
                                 Classes="secondary"
-                                Content="폴더 변경 / 다시 인덱싱"
+                                Content="폴더 변경"
                                 Click="ChangeFolderButton_OnClick"/>
+                        <Button x:Name="RebuildIndexButton"
+                                DockPanel.Dock="Left"
+                                Classes="secondary"
+                                Margin="8,0,0,0"
+                                Content="처음부터 다시 인덱싱"
+                                Click="RebuildIndexButton_OnClick"/>
                         <TextBlock x:Name="IndexedFolderText"
                                    Margin="16,0,0,0"
                                    FontSize="12"

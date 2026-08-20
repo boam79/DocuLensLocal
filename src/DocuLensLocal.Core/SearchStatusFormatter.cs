@@ -17,7 +17,7 @@ public static class SearchStatusFormatter
     {
         if (documentCount == 0)
         {
-            return "인덱싱된 문서가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다.";
+            return "인덱싱된 문서가 없습니다. 아래에서 폴더를 바꾸거나 「처음부터 다시 인덱싱」을 누르세요.";
         }
 
         if (indexingNow && bodyCount == 0)
@@ -27,7 +27,7 @@ public static class SearchStatusFormatter
 
         if (bodyCount == 0)
         {
-            return "파일명에 그 단어가 없습니다. 본문이 비어 있으면 앱이 자동으로 다시 읽습니다. 안 되면 「폴더 변경 / 다시 인덱싱」을 누르세요.";
+            return "파일명에 그 단어가 없습니다. 본문이 비어 있으면 앱이 자동으로 다시 읽습니다. 안 되면 「처음부터 다시 인덱싱」을 누르세요.";
         }
 
         return "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";

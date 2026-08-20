@@ -156,6 +156,10 @@ public partial class MainWindow : Window
             && !string.IsNullOrWhiteSpace(folder)
             && Directory.Exists(folder);
         SelectFolderButton.IsEnabled = !_isIndexing;
+        ChangeFolderButton.IsEnabled = !_isIndexing;
+        RebuildIndexButton.IsEnabled = !_isIndexing
+            && !string.IsNullOrWhiteSpace(folder)
+            && Directory.Exists(folder);
     }
 
     private async void SelectFolderButton_OnClick(object? sender, RoutedEventArgs e)
@@ -281,7 +285,64 @@ public partial class MainWindow : Window
         _showMainSearch = false;
         SearchTab.IsChecked = true;
         ShowFirstRun();
-        IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 다시 시작합니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+        IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 그 폴더로 목록을 맞춥니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+    }
+
+    private async void RebuildIndexButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = LoadSettings().IndexFolder;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            _showMainSearch = false;
+            SearchTab.IsChecked = true;
+            ShowFirstRun();
+            IndexStatusText.Text = "폴더를 먼저 선택한 뒤 인덱싱하세요.";
+            return;
+        }
+
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        _isIndexing = true;
+        UpdateIndexButtonState();
+        _searchSubmitted = false;
+        SearchQueryBox.Text = string.Empty;
+        SearchResultsList.ItemsSource = null;
+        ApplySearchListMode(SearchListMode.Idle);
+        IndexedSummaryText.Text = "검색 목록을 지우고 다시 읽는 중…";
+        IdleHintText.Text = "원본 파일은 그대로 두고, 이 앱의 검색 목록만 다시 만듭니다.";
+
+        var progress = new Progress<IndexingProgress>(snapshot =>
+        {
+            IndexedSummaryText.Text = snapshot.IsCompleted
+                ? SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount)
+                : $"{snapshot.PhaseKo ?? "인덱싱 중"} · {snapshot.ProcessedCount} / {snapshot.FoundCount}";
+        });
+
+        try
+        {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+            var result = await _indexing.Rebuild(folder, progress, CancellationToken.None).ConfigureAwait(true);
+            var settings = LoadSettings();
+            settings.IndexCompleted = result.IsCompleted;
+            SaveSettings(settings);
+            _showMainSearch = true;
+            if (SearchTab.IsChecked == true)
+            {
+                ShowMainSearch(resetSearch: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"다시 인덱싱하지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            _isIndexing = false;
+            UpdateIndexButtonState();
+        }
     }
 
     private async void UpdateButton_OnClick(object? sender, RoutedEventArgs e)

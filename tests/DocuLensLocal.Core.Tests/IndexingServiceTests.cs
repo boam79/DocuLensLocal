@@ -272,6 +272,68 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task clear_index_removes_search_rows_but_not_original_files()
+    {
+        var path = WriteStubPdf(_pdfRoot, "keep-me.pdf");
+        var originalBytes = File.ReadAllBytes(path);
+        var originalMtime = File.GetLastWriteTimeUtc(path);
+        var extractor = new CountingExtractor("본문 계약");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Single(service.Search("계약"));
+
+        var removed = service.ClearIndex();
+
+        Assert.Equal(1, removed);
+        Assert.Empty(service.GetIndexedDocuments());
+        Assert.Empty(service.Search("계약"));
+        Assert.Equal(0, service.GetCoverage().DocumentCount);
+        Assert.Equal(originalBytes, File.ReadAllBytes(path));
+        Assert.Equal(originalMtime, File.GetLastWriteTimeUtc(path));
+    }
+
+    [Fact]
+    public async Task rebuild_clears_then_reextracts_unchanged_files()
+    {
+        WriteStubPdf(_pdfRoot, "keep.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+
+        var result = await service.Rebuild(_pdfRoot);
+
+        Assert.Equal(2, extractor.Calls);
+        Assert.True(result.IsCompleted);
+        Assert.Equal(1, result.FoundCount);
+        Assert.Equal("본문 계약 조항", Assert.Single(service.GetIndexedDocuments()).BodyText);
+        Assert.Single(service.Search("계약"));
+    }
+
+    [Fact]
+    public async Task start_drops_documents_that_are_no_longer_in_the_folder()
+    {
+        WriteStubPdf(_pdfRoot, "keep.pdf");
+        var gone = WriteStubPdf(_pdfRoot, "gone.pdf");
+        var service = new IndexingService(_userData, new CountingExtractor("본문"));
+        await service.Start(_pdfRoot);
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+
+        File.Delete(gone);
+        await service.Start(_pdfRoot);
+
+        var remaining = Assert.Single(service.GetIndexedDocuments());
+        Assert.Contains("keep.pdf", remaining.FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void clear_index_is_safe_when_database_is_missing()
+    {
+        var service = new IndexingService(_userData);
+        Assert.Equal(0, service.ClearIndex());
+        Assert.Empty(service.GetIndexedDocuments());
+    }
+
+    [Fact]
     public async Task reextracts_when_previous_body_was_empty()
     {
         WriteStubPdf(_pdfRoot, "scan-later.pdf");

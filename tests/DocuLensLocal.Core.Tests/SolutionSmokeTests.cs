@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.14</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.15</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -35,7 +35,9 @@ public class SolutionSmokeTests
         Assert.Contains("Content=\"버스 광고\"", axaml, StringComparison.Ordinal);
         Assert.Contains("파일명이나 본문 단어로 찾아 보세요", axaml, StringComparison.Ordinal);
         Assert.Contains("검색할 PDF, Word, 한글(HWP) 파일이 들어 있는 폴더를 선택하세요", axaml, StringComparison.Ordinal);
-        Assert.Contains("Text=\"{Binding KindLabel}\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"RebuildIndexButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"처음부터 다시 인덱싱\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"폴더 변경\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]

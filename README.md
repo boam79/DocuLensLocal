@@ -26,7 +26,7 @@ Windows 10/11용 **로컬 문서 검색기**입니다. 탐색기 파일명 검�
 
 설치 파일 직접 주소:
 
-- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.14/DocuLensLocal-win-Setup.exe
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.15/DocuLensLocal-win-Setup.exe
 
 GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 
@@ -40,7 +40,7 @@ GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니
 
 다른 컴퓨터에 쓰려면 그 컴퓨터에도 이 설치 파일을 받아 설치하고, 그 PC에서 열 수 있는 문서 폴더를 선택하세요. 폴더 이름이 `계약서`가 아니어도 됩니다.
 
-Word·한글 본문 검색은 v0.1.14 설치본과 이 저장소의 `dotnet run`에 들어 있습니다. 예전에 PDF만 인덱싱했다면 **폴더 변경 / 다시 인덱싱**을 한 번 누르세요. 앱을 켜면 검색창과 예시 단어만 보입니다. 검색한 뒤 **초기화**를 누르면 다시 처음 화면으로 돌아갑니다.
+Word·한글 본문 검색과 인덱스 초기화는 v0.1.15 설치본과 이 저장소의 `dotnet run`에 들어 있습니다. 예전에 PDF만 인덱싱했다면 검색 화면 아래 **처음부터 다시 인덱싱**을 누르세요. 원본 파일은 그대로 두고, 이 앱의 검색 목록만 지운 뒤 폴더를 다시 읽습니다. 앱을 켜면 검색창과 예시 단어만 보입니다. 검색한 뒤 검색창 옆 **초기화**를 누르면 검색어만 지워집니다.
 
 ## 최초 실행
 

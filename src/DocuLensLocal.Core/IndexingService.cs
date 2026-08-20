@@ -80,6 +80,8 @@ public sealed class IndexingService
             Report(progress, files.Length, documents.Count, file, "본문 추출·OCR", errors, completed: false);
         }
 
+        store.KeepOnly(files);
+
         var result = new IndexingResult
         {
             FoundCount = files.Length,
@@ -115,6 +117,30 @@ public sealed class IndexingService
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
         return store.Search(query);
+    }
+
+    public int ClearIndex()
+    {
+        if (!File.Exists(IndexDatabasePath))
+        {
+            return 0;
+        }
+
+        using var store = new DocumentIndexStore(IndexDatabasePath);
+        return store.DeleteAll();
+    }
+
+    public Task<IndexingResult> Rebuild(string folderPath, CancellationToken cancellationToken = default) =>
+        Rebuild(folderPath, progress: null, cancellationToken);
+
+    public async Task<IndexingResult> Rebuild(
+        string folderPath,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default)
+    {
+        Report(progress, foundCount: 0, processedCount: 0, currentFile: null, "검색 목록을 지우는 중", [], completed: false);
+        ClearIndex();
+        return await Start(folderPath, progress, cancellationToken).ConfigureAwait(false);
     }
 
     public IndexCoverage GetCoverage()
