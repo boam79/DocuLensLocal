@@ -258,9 +258,13 @@
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - 가운데 「문서」 칸을 빨강 PDF / 파랑 WORD / 틸 HWP 세 칸으로 바꿈.
 - 아래에 「PDF · Word · 한글(HWP) 파일을 찾을 수 있습니다」 안내.
+- `dotnet test` 97/97. App 빌드 성공. 버전 0.1.17.
+- **v0.1.17 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.17/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 검색 화면 가운데에 PDF·WORD·HWP가 보이는지. 완료 표시는 사용자 확인 후.
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-20 (0.1.17 Executor): 검색 빈 화면 가운데 「문서」를 **PDF / WORD / HWP** 세 칸으로 바꿈. 설치본 v0.1.17 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.15 Executor): 검색 화면에 **처음부터 다시 인덱싱**을 넣음. 검색창 **초기화**는 검색어만 지움(기존). 인덱스 초기화는 원본 문서를 건드리지 않음.
 
 ## Background and Motivation (2026-08-20 OCR·업데이트 팝업)
