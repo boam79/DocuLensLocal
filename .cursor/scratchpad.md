@@ -391,11 +391,12 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 모드: **Executor** (엑셀 넣으면 바로 인덱싱 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - `dotnet test` 127/127. 버전 0.1.22.
+- **v0.1.22 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.22/DocuLensLocal-win-Setup.exe
 - 감시 필터 `*`, `~$`/`.tmp`도 동기화 시작. ZIP은 `FileShare.ReadWrite`. 깨진 ZIP은 목록에 고정하지 않음.
 
 ## Executor's Feedback or Assistance Requests
 
-- 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 준비. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 
 ## Executor's Feedback or Assistance Requests
 
