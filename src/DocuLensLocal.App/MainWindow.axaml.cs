@@ -37,12 +37,78 @@ public partial class MainWindow : Window
         Opened -= OnOpened;
         try
         {
+            await TryShowPendingUpdateNotesAsync().ConfigureAwait(true);
+            await TryPromptForUpdateAsync().ConfigureAwait(true);
             await TryPrepareOcrAndBackfillAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
         {
-            IndexedSummaryText.Text = $"본문 인덱스를 시작하지 못했습니다: {ex.Message}";
+            IndexedSummaryText.Text = $"시작하지 못했습니다: {ex.Message}";
         }
+    }
+
+    private async Task TryShowPendingUpdateNotesAsync()
+    {
+        var settings = LoadSettings();
+        if (string.IsNullOrWhiteSpace(settings.PendingUpdateNotes))
+        {
+            return;
+        }
+
+        var notes = settings.PendingUpdateNotes;
+        settings.PendingUpdateNotes = null;
+        settings.PendingUpdateVersion = null;
+        SaveSettings(settings);
+        await MessageDialog.AlertAsync(this, UpdatePromptCopy.NotesTitle, notes).ConfigureAwait(true);
+    }
+
+    private async Task TryPromptForUpdateAsync()
+    {
+        var result = await _updater.CheckAsync(_updateFeed).ConfigureAwait(true);
+        if (result.Status == AppUpdateStatus.Available && !string.IsNullOrWhiteSpace(result.NewerVersion))
+        {
+            var confirm = await MessageDialog.ConfirmAsync(
+                this,
+                UpdatePromptCopy.AvailableTitle,
+                result.MessageKo).ConfigureAwait(true);
+            if (!confirm)
+            {
+                return;
+            }
+
+            await ApplyConfirmedUpdateAsync(result.NewerVersion).ConfigureAwait(true);
+            return;
+        }
+
+        if (result.Status == AppUpdateStatus.NotPackaged && !string.IsNullOrWhiteSpace(result.NewerVersion))
+        {
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, result.MessageKo).ConfigureAwait(true);
+        }
+    }
+
+    private async Task ApplyConfirmedUpdateAsync(string version)
+    {
+        var settings = LoadSettings();
+        settings.PendingUpdateVersion = version;
+        settings.PendingUpdateNotes = ReleaseHistory.FormatNotes(CurrentDisplayVersion(), version);
+        SaveSettings(settings);
+        var applied = await _updater.ApplyAsync(_updateFeed, version).ConfigureAwait(true);
+        UpdateStatusText.Text = applied.MessageKo;
+        if (applied.Status != AppUpdateStatus.Applied)
+        {
+            settings.PendingUpdateNotes = null;
+            settings.PendingUpdateVersion = null;
+            SaveSettings(settings);
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, applied.MessageKo).ConfigureAwait(true);
+        }
+    }
+
+    private static string CurrentDisplayVersion()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        return AppVersionFormatter.DisplayVersion(
+            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+            assembly.GetName().Version);
     }
 
     private void LoadInfoPanel()
@@ -352,12 +418,33 @@ public partial class MainWindow : Window
 
         try
         {
-            var result = await _updater.CheckAndApplyAsync(_updateFeed).ConfigureAwait(true);
+            var result = await _updater.CheckAsync(_updateFeed).ConfigureAwait(true);
             UpdateStatusText.Text = result.MessageKo;
+            if (result.Status == AppUpdateStatus.Available && !string.IsNullOrWhiteSpace(result.NewerVersion))
+            {
+                var confirm = await MessageDialog.ConfirmAsync(
+                    this,
+                    UpdatePromptCopy.AvailableTitle,
+                    result.MessageKo).ConfigureAwait(true);
+                if (!confirm)
+                {
+                    UpdateStatusText.Text = "업데이트를 나중에 설치할 수 있습니다.";
+                    return;
+                }
+
+                await ApplyConfirmedUpdateAsync(result.NewerVersion).ConfigureAwait(true);
+                return;
+            }
+
+            if (result.Status is AppUpdateStatus.NotPackaged or AppUpdateStatus.Failed)
+            {
+                await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, result.MessageKo).ConfigureAwait(true);
+            }
         }
         catch (Exception ex)
         {
             UpdateStatusText.Text = $"업데이트를 확인하지 못했습니다: {ex.Message}";
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, UpdateStatusText.Text).ConfigureAwait(true);
         }
         finally
         {

@@ -19,4 +19,8 @@ public sealed class AppSettings
 
     /// <summary>True after IndexingService.Start completed, including 0-file folders.</summary>
     public bool IndexCompleted { get; set; }
+
+    public string? PendingUpdateVersion { get; set; }
+
+    public string? PendingUpdateNotes { get; set; }
 }

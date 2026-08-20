@@ -233,15 +233,29 @@
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (인덱스 초기화·재인덱싱 — 사용자 확인 전 완료 표시 금지)
+- 모드: **Executor** (Word·HWP 스캔 OCR·업데이트 팝업 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
-- `dotnet test` 88/88. App 빌드 성공. 버전 0.1.15.
-- **v0.1.15 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.15/DocuLensLocal-win-Setup.exe
-- 검색 화면 **처음부터 다시 인덱싱**: `index.db` 비우고 폴더를 다시 읽음. 원본 파일은 수정 없음. **폴더 변경**은 폴더만 고름.
-- 일반 인덱싱은 폴더에 없는 파일을 목록에서 제거함.
-- 사용자 확인: 정보 탭 업데이트 후 **처음부터 다시 인덱싱**, Word·한글 본문 검색. 완료 표시는 사용자 확인 후.
+- `dotnet test` 97/97. App 빌드 성공. 버전 0.1.16.
+- 글자가 거의 없는 Word/HWP는 큰 그림을 OCR. 글자가 많은 파일은 텍스트만(로고 OCR 생략).
+- 시작 시 새 버전 팝업(확인/나중에). 확인 후 재시작되면 업데이트 내역 팝업.
+- 예전에 인덱싱한 스캔 Word/HWP는 **처음부터 다시 인덱싱** 필요.
+
 
 ## Executor's Feedback or Assistance Requests
 
 - 2026-08-20 (0.1.15 Executor): 검색 화면에 **처음부터 다시 인덱싱**을 넣음. 검색창 **초기화**는 검색어만 지움(기존). 인덱스 초기화는 원본 문서를 건드리지 않음.
+
+## Background and Motivation (2026-08-20 OCR·업데이트 팝업)
+
+사용자: Word·HWP는 OCR이 안 되면 인덱싱만으로는 의미가 없다. 업데이트가 있으면 팝업 → 확인 시 적용 → 업데이트 내역 팝업.
+
+글자가 들어 있는 Word/HWP는 이미 본문 검색이 된다. 스캔(그림만 있는) 파일은 그림 OCR이 필요하다. 업데이트는 정보 탭 버튼만 있고 확인 창이 없다.
+
+## High-level Task Breakdown (2026-08-20 OCR·업데이트 팝업)
+
+### Task F
+
+- Word/HWP 글자가 거의 없으면 큰 그림을 OCR. 원본 수정 없음.
+- 시작 시 새 버전 팝업(확인/나중에). 확인 시 적용. 재시작 후 내역 팝업.
+- 버전 0.1.16. `dotnet test` 통과.
 

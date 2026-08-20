@@ -82,4 +82,80 @@ internal static class TestOfficeFactory
 
         return path;
     }
+
+    public static string WriteDocxWithImage(string directory, string fileName, string text, byte[] pngBytes)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        var document = zip.CreateEntry("word/document.xml");
+        using (var writer = new StreamWriter(document.Open(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+        {
+            writer.Write(
+                """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+                  <w:body><w:p><w:r><w:t xml:space="preserve">
+                """);
+            writer.Write(System.Security.SecurityElement.Escape(text));
+            writer.Write("</w:t></w:r></w:p></w:body></w:document>");
+        }
+
+        var image = zip.CreateEntry("word/media/image1.png");
+        using (var stream = image.Open())
+        {
+            stream.Write(pngBytes);
+        }
+
+        return path;
+    }
+
+    public static string WriteHwpxWithImage(string directory, string fileName, string text, byte[] pngBytes)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        var section = zip.CreateEntry("Contents/section0.xml");
+        using (var writer = new StreamWriter(section.Open(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+        {
+            writer.Write(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph">
+                  <hp:p><hp:run><hp:t>
+                """);
+            writer.Write(System.Security.SecurityElement.Escape(text));
+            writer.Write("</hp:t></hp:run></hp:p></hs:sec>");
+        }
+
+        var image = zip.CreateEntry("BinData/image1.png");
+        using (var stream = image.Open())
+        {
+            stream.Write(pngBytes);
+        }
+
+        return path;
+    }
+
+    public static string WriteHwpWithImage(string directory, string fileName, string text, byte[] pngBytes)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        var hwp = BlankFileMaker.Make();
+        var paragraph = hwp.BodyText.SectionList[0].GetParagraph(0);
+        if (paragraph.Text is null)
+        {
+            paragraph.CreateText();
+        }
+
+        var paraText = paragraph.Text ?? throw new InvalidOperationException("HWP paragraph text was not created.");
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            paraText.AddString(text);
+        }
+
+        hwp.BinData.AddNewEmbeddedBinaryData("BIN0001.png", pngBytes, HwpLib.Object.DocInfo.BinData.BinDataCompress.ByStorageDefault);
+        HWPWriter.ToFile(hwp, path);
+        return path;
+    }
 }

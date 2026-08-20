@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.16", "Word·HWP 스캔 OCR·업데이트 안내"),
         new("0.1.15", "인덱스 초기화·재인덱싱"),
         new("0.1.14", "Word·HWP 본문 검색"),
         new("0.1.13", "검색 화면 다듬기"),
@@ -23,4 +24,44 @@ public static class ReleaseHistory
         new("0.1.1", "스플래시/폴더선택"),
         new("0.1.0", "splash 없음"),
     ];
+
+    public static IReadOnlyList<ReleaseNote> Between(string? afterVersion, string throughVersion)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(throughVersion);
+        return Known.Where(note =>
+            Compare(note.Version, afterVersion) > 0
+            && Compare(note.Version, throughVersion) <= 0).ToList();
+    }
+
+    public static string FormatNotes(string? afterVersion, string throughVersion)
+    {
+        var notes = Between(afterVersion, throughVersion);
+        if (notes.Count == 0)
+        {
+            return $"버전 {throughVersion}으로 업데이트했습니다.";
+        }
+
+        return string.Join("\n\n", notes.Select(note => $"{note.Version}\n{note.SummaryKo}"));
+    }
+
+    private static int Compare(string version, string? other)
+    {
+        if (string.IsNullOrWhiteSpace(other))
+        {
+            return 1;
+        }
+
+        if (Version.TryParse(Normalize(version), out var left) && Version.TryParse(Normalize(other), out var right))
+        {
+            return left.CompareTo(right);
+        }
+
+        return string.Compare(version, other, StringComparison.Ordinal);
+    }
+
+    private static string Normalize(string version)
+    {
+        var parts = version.Split('.');
+        return parts.Length >= 3 ? version : version + ".0";
+    }
 }

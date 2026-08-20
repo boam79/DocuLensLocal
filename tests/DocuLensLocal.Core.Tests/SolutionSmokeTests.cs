@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.15</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.16</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -38,6 +38,17 @@ public class SolutionSmokeTests
         Assert.Contains("x:Name=\"RebuildIndexButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"처음부터 다시 인덱싱\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"폴더 변경\"", axaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void update_dialog_has_confirm_and_later_buttons()
+    {
+        var axaml = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.App", "MessageDialog.axaml"));
+
+        Assert.Contains("x:Name=\"PrimaryButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SecondaryButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"확인\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"나중에\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]

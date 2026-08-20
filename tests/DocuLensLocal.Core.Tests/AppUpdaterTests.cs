@@ -56,6 +56,38 @@ public class AppUpdaterTests
         Assert.False(feed.ApplyCalled);
     }
 
+    [Fact]
+    public async Task check_async_does_not_apply_when_update_exists()
+    {
+        var feed = new FakeUpdateFeed { NewerVersion = "0.1.16", CanApplyUpdates = true };
+
+        var result = await _updater.CheckAsync(feed);
+
+        Assert.Equal(AppUpdateStatus.Available, result.Status);
+        Assert.Equal("0.1.16", result.NewerVersion);
+        Assert.Contains("0.1.16", result.MessageKo, StringComparison.Ordinal);
+        Assert.False(feed.ApplyCalled);
+    }
+
+    [Fact]
+    public async Task apply_async_downloads_after_user_confirms()
+    {
+        var feed = new FakeUpdateFeed { NewerVersion = "0.1.16", CanApplyUpdates = true };
+
+        var result = await _updater.ApplyAsync(feed, "0.1.16");
+
+        Assert.Equal(AppUpdateStatus.Applied, result.Status);
+        Assert.True(feed.ApplyCalled);
+    }
+
+    [Fact]
+    public void update_prompt_copy_is_plain_korean()
+    {
+        Assert.Equal("업데이트가 있습니다", UpdatePromptCopy.AvailableTitle);
+        Assert.Contains("확인을 누르면", UpdatePromptCopy.AvailableBody("0.1.16"), StringComparison.Ordinal);
+        Assert.Equal("업데이트 내역", UpdatePromptCopy.NotesTitle);
+    }
+
     private sealed class FakeUpdateFeed : IUpdateFeed
     {
         public string? NewerVersion { get; init; }
