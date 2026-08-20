@@ -54,6 +54,7 @@ public sealed class IndexingService
         Report(progress, pdfs.Length, processedCount: 0, currentFile: null, "PDF를 찾는 중", errors, completed: false);
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
+        var previous = store.GetAll().ToDictionary(doc => doc.FilePath, StringComparer.OrdinalIgnoreCase);
 
         foreach (var pdf in pdfs)
         {
@@ -62,7 +63,8 @@ public sealed class IndexingService
 
             try
             {
-                var document = IndexPdfReadOnly(pdf, cancellationToken);
+                previous.TryGetValue(pdf, out var existing);
+                var document = IndexPdfReadOnly(pdf, existing, cancellationToken);
                 store.Upsert(document);
                 documents.Add(document);
             }
@@ -131,7 +133,7 @@ public sealed class IndexingService
             .Select(Path.GetFullPath)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
-    private IndexedDocument IndexPdfReadOnly(string path, CancellationToken cancellationToken)
+    private IndexedDocument IndexPdfReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken)
     {
         if (!File.Exists(path))
         {
@@ -144,6 +146,11 @@ public sealed class IndexingService
         }
 
         var info = new FileInfo(path);
+        if (IndexFreshness.CanReuse(existing, info))
+        {
+            return existing!;
+        }
+
         var extracted = _extractor.Extract(path, cancellationToken);
         var hasBody = !string.IsNullOrWhiteSpace(extracted.BodyText);
         var status = extracted.OcrPageCount > 0

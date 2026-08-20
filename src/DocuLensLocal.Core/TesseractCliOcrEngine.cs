@@ -38,9 +38,7 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
         {
             cancellationToken.ThrowIfCancellationRequested();
             var tessdata = TessdataLocator.FindDirectory();
-            var languages = TessdataLocator.HasLanguageData(tessdata)
-                ? TessdataLocator.ResolveLanguages(tessdata)
-                : _languages;
+            var languages = OcrLanguage.Primary(tessdata);
             var start = new ProcessStartInfo
             {
                 FileName = _executable,
@@ -127,8 +125,8 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
 
     internal static string ResolveLanguages(string? executable)
     {
-        var packed = TessdataLocator.ResolveLanguages(TessdataLocator.FindDirectory());
-        if (packed == "kor+eng")
+        var packed = OcrLanguage.Primary(TessdataLocator.FindDirectory());
+        if (packed == "kor")
         {
             return packed;
         }

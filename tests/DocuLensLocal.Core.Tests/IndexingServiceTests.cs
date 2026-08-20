@@ -258,6 +258,34 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task skips_extractor_when_size_mtime_and_body_are_unchanged()
+    {
+        WriteStubPdf(_pdfRoot, "keep.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+
+        await service.Start(_pdfRoot);
+        await service.Start(_pdfRoot);
+
+        Assert.Equal(1, extractor.Calls);
+        Assert.Equal("본문 계약 조항", Assert.Single(service.GetIndexedDocuments()).BodyText);
+    }
+
+    [Fact]
+    public async Task reextracts_when_previous_body_was_empty()
+    {
+        WriteStubPdf(_pdfRoot, "scan-later.pdf");
+        await new IndexingService(_userData, new CountingExtractor("")).Start(_pdfRoot);
+
+        var extractor = new CountingExtractor("OCR 이후에 생긴 본문");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+
+        Assert.Equal(1, extractor.Calls);
+        Assert.Equal("OCR 이후에 생긴 본문", Assert.Single(service.GetIndexedDocuments()).BodyText);
+    }
+
+    [Fact]
     public async Task concatenated_bus_ad_query_matches_split_filenames()
     {
         WriteStubPdf(_pdfRoot, "버스일정.pdf");
@@ -287,6 +315,21 @@ public class IndexingServiceTests : IDisposable
         var path = Path.Combine(directory, fileName);
         File.WriteAllText(path, "%PDF-1.4 stub for indexing tests\n");
         return path;
+    }
+
+    private sealed class CountingExtractor : IPdfContentExtractor
+    {
+        private readonly string _body;
+
+        public CountingExtractor(string body) => _body = body;
+
+        public int Calls { get; private set; }
+
+        public PdfExtractedContent Extract(string pdfPath, CancellationToken cancellationToken)
+        {
+            Calls++;
+            return new(_body, PageCount: 1, OcrPageCount: 0, [new PdfPageContent(1, _body, "")]);
+        }
     }
 
     private static IndexingProgress Clone(IndexingProgress progress) => new()

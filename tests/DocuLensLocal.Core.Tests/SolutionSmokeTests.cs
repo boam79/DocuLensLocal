@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.10</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.11</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]

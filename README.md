@@ -24,7 +24,7 @@ Windows 10/11용 **로컬 PDF 문서 검색기**입니다. 탐색기 파일명 �
 
 설치 파일 직접 주소:
 
-- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.10/DocuLensLocal-win-Setup.exe
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.11/DocuLensLocal-win-Setup.exe
 
 GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 
@@ -38,7 +38,7 @@ GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니
 
 다른 컴퓨터에 쓰려면 그 컴퓨터에도 이 설치 파일을 받아 설치하고, 그 PC에서 열 수 있는 PDF 폴더를 선택하세요. 폴더 이름이 `계약서`가 아니어도 됩니다.
 
-본문 검색·OCR은 v0.1.10 설치본과 이 저장소의 `dotnet run`에 들어 있습니다. 예전에 파일명만 인덱싱된 경우, 앱을 켜면 **자동으로 본문을 다시 읽습니다.** 스캔 PDF는 설치본에 들어 있는 한국어/영어 OCR을 씁니다. Windows에 Tesseract를 따로 설치할 필요는 없습니다.
+본문 검색·OCR은 v0.1.11 설치본과 이 저장소의 `dotnet run`에 들어 있습니다. 예전에 파일명만 인덱싱된 경우, 앱을 켜면 **자동으로 본문을 다시 읽습니다.** 스캔 PDF는 설치본에 들어 있는 OCR을 쓰며, 한국어를 먼저 읽고 글자가 거의 없을 때만 영어를 한 번 더 봅니다. Windows에 Tesseract를 따로 설치할 필요는 없습니다.
 
 ## 최초 실행
 

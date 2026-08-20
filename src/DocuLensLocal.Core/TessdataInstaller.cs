@@ -60,7 +60,7 @@ public sealed class TessdataInstaller
             ? new HttpClient()
             : new HttpClient(_handler, disposeHandler: false);
         client.Timeout = TimeSpan.FromMinutes(2);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("DocuLensLocal/0.1.10");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("DocuLensLocal/0.1.11");
         return client;
     }
 }

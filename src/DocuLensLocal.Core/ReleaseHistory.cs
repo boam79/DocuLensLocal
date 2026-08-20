@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.11", "OCR 속도 개선"),
         new("0.1.10", "본문 자동 인덱스·내장 OCR"),
         new("0.1.9", "버스광고 붙여 검색"),
         new("0.1.8", "버튼·목록 글자 표시"),

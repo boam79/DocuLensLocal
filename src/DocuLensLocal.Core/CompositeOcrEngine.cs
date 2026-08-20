@@ -17,27 +17,19 @@ public sealed class CompositeOcrEngine : IOcrEngine
 
     public string RecognizePng(byte[] pngBytes, CancellationToken cancellationToken = default)
     {
-        foreach (var engine in _engines)
+        var engine = _engines.FirstOrDefault(item => item.IsAvailable);
+        if (engine is null)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!engine.IsAvailable)
-            {
-                continue;
-            }
-
-            try
-            {
-                var text = engine.RecognizePng(pngBytes, cancellationToken);
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    return text;
-                }
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-            }
+            return string.Empty;
         }
 
-        return string.Empty;
+        try
+        {
+            return engine.RecognizePng(pngBytes, cancellationToken) ?? string.Empty;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return string.Empty;
+        }
     }
 }

@@ -117,14 +117,13 @@
 - 2026-08-20 (UI 점검): 화면에서 276건은 보이는데 검색 버튼·목록·하단 버튼 글자가 없음.
   - 원인: Avalonia `ContentPresenter`에 `Content="{TemplateBinding Content}"`가 없음.
   - 수정: 0.1.8. 인덱스는 살아 있음. 업데이트 후 파일명/본문이 목록에 보여야 함.
-- 2026-08-20 (0.1.10 Executor): 스크린샷 「본문 0건 / OCR 엔진 없음 / 부대」.
-  - 자동 재인덱스: `IndexBackfillPolicy` — 문서>0 && 본문==0 && 저장 폴더 존재 시 시작 직후 `IndexingService.Start`.
-  - OCR: charlesw Tesseract 5.2.0 (`tesseract50.dll`) + tessdata_fast kor/eng를 설치본에 포함. CLI는 보조.
-  - `dotnet test` 63/63. 사용자 확인 전 완료 표시 금지.
+- 2026-08-20 (0.1.11 Executor): OCR 속도. 페이지마다 TesseractEngine 생성 + kor+eng 동시 로드가 병목.
+  - 엔진 재사용, 한국어 우선(글자 적으면 영어 한 번), 회색조 120dpi JPEG, PDF 스트림 재사용, 본문 있는 파일은 건너뜀, 빈 페이지에 CLI 재실행 안 함.
+  - `dotnet test` 66/66. 사용자: 정보 탭 업데이트 후 다시 인덱싱 체감 속도 확인.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.10 구현 — 사용자 확인 전 완료 표시 금지)
+- 모드: **Executor** (v0.1.11 OCR 속도 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - 화면 증상(사용자 스크린샷): `인덱싱 완료 · 276건 · 본문 0건 · OCR 엔진 없음`, `부대` 검색은 파일명만 봄.
 - 원인: 예전 파일명-only `index.db`를 그대로 씀. Windows에 Tesseract가 PATH에 없어 OCR 배지까지 꺼짐.
@@ -185,4 +184,5 @@
 - Windows 사용자는 Tesseract를 따로 설치하지 않는다. 설치본에 `x64/tesseract50.dll` + `tessdata/eng|kor.traineddata`(tessdata_fast)를 넣고, PATH CLI는 보조만 쓴다.
 - 예전 인덱스(본문 0건)는 안내 문구만으로 해결되지 않는다. 저장된 `IndexFolder`가 있으면 시작 시 자동 재인덱싱해야 한다.
 - charlesw Tesseract 5.2.0 native 파일 이름은 `tesseract41.dll`이 아니라 `tesseract50.dll`이다.
+- OCR 속도: 페이지마다 `new TesseractEngine` 하지 말 것. `kor+eng` 동시 로드는 한국어만보다 훨씬 느리다. 회색조 120dpi + JPEG면 검색용으로 충분하다.
 

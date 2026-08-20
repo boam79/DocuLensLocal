@@ -110,6 +110,10 @@ public class TessdataLocatorTests
         {
             Assert.True(TessdataLocator.HasLanguageData(dir));
             Assert.Equal("kor+eng", TessdataLocator.ResolveLanguages(dir));
+            Assert.Equal("kor", OcrLanguage.Primary(dir));
+            Assert.Equal("eng", OcrLanguage.Fallback(dir, "kor"));
+            Assert.True(OcrLanguage.ShouldTryFallback("Hi"));
+            Assert.False(OcrLanguage.ShouldTryFallback("버스 광고 계약 조항은 을의 의무를 정한다"));
             Assert.Equal(dir, TessdataLocator.FindDirectory(dir));
         }
         finally
@@ -230,6 +234,18 @@ public class CompositeOcrEngineTests
         Assert.Equal("ready", engine.RecognizePng([9]));
         Assert.Equal(0, missing.Calls);
         Assert.Equal(1, ready.Calls);
+    }
+
+    [Fact]
+    public void does_not_run_a_second_engine_when_the_first_available_one_returns_empty()
+    {
+        var first = new StubOcrEngine(available: true, text: "   ");
+        var second = new StubOcrEngine(available: true, text: "slow-fallback");
+        var engine = new CompositeOcrEngine(first, second);
+
+        Assert.Equal("   ", engine.RecognizePng([1]));
+        Assert.Equal(1, first.Calls);
+        Assert.Equal(0, second.Calls);
     }
 
     [Fact]

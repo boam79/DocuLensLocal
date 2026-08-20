@@ -29,6 +29,32 @@ public interface IOcrEngine
 public interface IPdfPageRasterizer
 {
     byte[] RenderPng(string pdfPath, int pageNumber, CancellationToken cancellationToken = default);
+
+    IPdfRenderSession Open(string pdfPath) => new DelegatingPdfRenderSession(this, pdfPath);
+}
+
+public interface IPdfRenderSession : IDisposable
+{
+    byte[] RenderPng(int pageNumber, CancellationToken cancellationToken = default);
+}
+
+internal sealed class DelegatingPdfRenderSession : IPdfRenderSession
+{
+    private readonly IPdfPageRasterizer _rasterizer;
+    private readonly string _pdfPath;
+
+    public DelegatingPdfRenderSession(IPdfPageRasterizer rasterizer, string pdfPath)
+    {
+        _rasterizer = rasterizer;
+        _pdfPath = pdfPath;
+    }
+
+    public byte[] RenderPng(int pageNumber, CancellationToken cancellationToken = default) =>
+        _rasterizer.RenderPng(_pdfPath, pageNumber, cancellationToken);
+
+    public void Dispose()
+    {
+    }
 }
 
 public enum SearchMatchKind
