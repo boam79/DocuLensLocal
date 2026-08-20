@@ -27,12 +27,16 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
-                <ControlTemplate>
+                <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
                             CornerRadius="10"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
@@ -53,14 +57,18 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
-                <ControlTemplate>
+                <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{StaticResource AccentBrush}"
                             BorderThickness="1.5"
                             CornerRadius="10"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                 </ControlTemplate>
             </Setter>
@@ -85,10 +93,13 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Template">
-                <ControlTemplate>
+                <ControlTemplate TargetType="RadioButton">
                     <StackPanel>
                         <Border Padding="2,8">
-                            <ContentPresenter HorizontalAlignment="Center"/>
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <Border x:Name="Underline" Height="4" CornerRadius="2" Background="Transparent"/>
                     </StackPanel>
@@ -132,14 +143,17 @@
             <Setter Property="Margin" Value="0,0,0,8"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
-                <ControlTemplate>
+                <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="ItemBd"
                             Background="White"
                             BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1"
                             CornerRadius="12"
                             Padding="14,12">
-                        <ContentPresenter/>
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Stretch"/>
                     </Border>
                 </ControlTemplate>
             </Setter>

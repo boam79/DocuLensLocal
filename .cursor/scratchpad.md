@@ -116,10 +116,10 @@
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (본문 검색·OCR 구현, 사용자 확인 대기)
+- 모드: **Executor** (v0.1.7 업로드 완료, 사용자 업데이트 확인 대기)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
-- origin/main: `ebc6ee9`. 릴리스 태그: v0.1.5
-- 다음: 사용자 확인 — 본문 검색·근거 문장·(Tesseract 있으면) OCR. Mac 설치는 하지 않음.
+- origin/main: `daa2a33`. 릴리스 태그: v0.1.7
+- 다음: Windows 설치본 정보 탭에서 업데이트, 또는 Setup.exe 재설치. Mac은 git pull 후 `dotnet run`.
 
 ---
 

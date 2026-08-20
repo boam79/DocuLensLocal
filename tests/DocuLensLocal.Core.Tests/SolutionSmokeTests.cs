@@ -36,6 +36,17 @@ public class SolutionSmokeTests
         Assert.False(File.Exists(Path.Combine(FindRepoRoot(), "scripts", "pack.sh")));
     }
 
+    [Fact]
+    public void avalonia_control_templates_bind_contentpresenter()
+    {
+        var axaml = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.App", "App.axaml"));
+        var presenters = System.Text.RegularExpressions.Regex.Matches(axaml, "<ContentPresenter\\b");
+        Assert.True(presenters.Count >= 4, $"expected button/tab/list presenters, found {presenters.Count}");
+        Assert.Contains("Content=\"{TemplateBinding Content}\"", axaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("<ContentPresenter/>", axaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("<ContentPresenter HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\"/>", axaml, StringComparison.Ordinal);
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
