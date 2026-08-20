@@ -108,6 +108,12 @@
   - `dotnet test` 45/45.
   - 사용자 확인: 본문에만 있는 단어로 검색되는지, 스캔 PDF는 tesseract 설치 후인지.
 
+- 2026-08-20 (릴리스 Executor): **v0.1.7 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음.
+  - main `daa2a33` + tag `v0.1.7` push.
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.7/DocuLensLocal-win-Setup.exe
+  - 0.1.5 대비: Avalonia(Mac에서 `dotnet run`), 본문 추출, 로컬 OCR, 근거 문장. 설치 페이로드만 업로드.
+  - Windows 설치본은 정보 탭 **업데이트**로 0.1.7을 받을 수 있음.
+
 ## Current Status / Progress Tracking
 
 - 모드: **Executor** (본문 검색·OCR 구현, 사용자 확인 대기)
