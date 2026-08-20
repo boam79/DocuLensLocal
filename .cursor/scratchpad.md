@@ -236,9 +236,10 @@
 - 모드: **Executor** (인덱스 초기화·재인덱싱 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - `dotnet test` 88/88. App 빌드 성공. 버전 0.1.15.
+- **v0.1.15 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.15/DocuLensLocal-win-Setup.exe
 - 검색 화면 **처음부터 다시 인덱싱**: `index.db` 비우고 폴더를 다시 읽음. 원본 파일은 수정 없음. **폴더 변경**은 폴더만 고름.
 - 일반 인덱싱은 폴더에 없는 파일을 목록에서 제거함.
-- 사용자 확인: 버튼이 보이는지, 누른 뒤 건수가 다시 채워지는지, 원본 파일이 그대로인지. 완료 표시는 사용자 확인 후.
+- 사용자 확인: 정보 탭 업데이트 후 **처음부터 다시 인덱싱**, Word·한글 본문 검색. 완료 표시는 사용자 확인 후.
 
 ## Executor's Feedback or Assistance Requests
 
