@@ -77,7 +77,7 @@ if (-not (Test-Path $tesseractDll)) {
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
-& $dotnet tool run vpk -- pack `
+& $dotnet tool run vpk -- [win] pack `
   --packId DocuLensLocal `
   --packVersion $version `
   --packDir $publishDir `

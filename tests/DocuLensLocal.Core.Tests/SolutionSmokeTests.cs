@@ -40,6 +40,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain(@"$dotnet = ""C:\Program Files\dotnet\dotnet.exe""", packPs1, StringComparison.Ordinal);
         Assert.Contains("Resolve-Dotnet", packPs1, StringComparison.Ordinal);
         Assert.Contains("win-x64", packPs1, StringComparison.Ordinal);
+        Assert.Contains("[win] pack", packPs1, StringComparison.Ordinal);
         Assert.Contains("DocuLensLocal.exe", packPs1, StringComparison.Ordinal);
         Assert.Contains("tessdata", packPs1, StringComparison.Ordinal);
         Assert.Contains("eng.traineddata", packPs1, StringComparison.Ordinal);
