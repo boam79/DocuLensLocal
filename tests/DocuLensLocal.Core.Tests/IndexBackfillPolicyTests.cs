@@ -112,7 +112,7 @@ public class SearchIdleCopyTests
     [Fact]
     public void idle_hint_without_documents_is_plain_korean()
     {
-        Assert.Equal("아직 인덱싱된 PDF가 없습니다.", SearchIdleCopy.Hint(new IndexCoverage(0, 0, 0, false)));
+        Assert.Equal("아직 인덱싱된 문서가 없습니다.", SearchIdleCopy.Hint(new IndexCoverage(0, 0, 0, false)));
     }
 }
 

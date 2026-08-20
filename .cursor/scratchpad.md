@@ -187,3 +187,35 @@
 - charlesw Tesseract 5.2.0 native 파일 이름은 `tesseract41.dll`이 아니라 `tesseract50.dll`이다.
 - OCR 속도: 페이지마다 `new TesseractEngine` 하지 말 것. `kor+eng` 동시 로드는 한국어만보다 훨씬 느리다. 회색조 120dpi + JPEG면 검색용으로 충분하다.
 
+## Background and Motivation (2026-08-20 Word·HWP)
+
+사용자: 프로그램이 PDF만 본다. Word·HWP가 기술적으로 가능한지 확인하고, 가능하면 진행해 달라.
+
+결론: 가능. 원본은 읽기만, 서버 업로드 없음, 인덱스는 userdata.
+
+| 확장자 | 본문 추출 |
+|---|---|
+| `.docx` | ZIP + `w:t` XML |
+| `.doc` | OLE `WordDocument` 스트림(OpenMcdf, 유니코드 FIB) |
+| `.hwpx` | ZIP + `hp:t` XML |
+| `.hwp` | HwpLibSharp `HWPReader` + `TextExtractor` |
+| `.pdf` | 기존 PdfPig + OCR |
+
+## High-level Task Breakdown (2026-08-20 Word·HWP)
+
+### Task D — Word·한글 본문 인덱싱
+
+- 성공 기준: 파일명이 달라도 DOCX/HWPX/HWP 본문 단어로 검색됨. txt/png는 제외. 원본 mtime 유지. UI 뱃지가 확장자를 말함. `dotnet test` 통과. 버전 0.1.14.
+
+## Current Status / Progress Tracking
+
+- 모드: **Executor** (Word·HWP 본문 검색 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 84/84. App 빌드 성공. 버전 0.1.14.
+- 지원: PDF(기존 OCR) + DOCX/DOC + HWP/HWPX. txt/png/`~$` 잠금 파일은 제외. 원본 읽기 전용.
+- 사용자 확인: 정보 탭 업데이트 후 **다시 인덱싱**, Word·한글 본문 단어로 검색되는지. 완료 표시는 사용자 확인 후.
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-20 (0.1.14 Executor): Word·한글 본문 검색을 넣음. PDF만 보던 발견을 `.pdf/.docx/.doc/.hwp/.hwpx`로 넓힘. NPOI는 취약점 의존성 때문에 쓰지 않음. 예전 PDF 인덱스는 **다시 인덱싱**이 필요함.
+

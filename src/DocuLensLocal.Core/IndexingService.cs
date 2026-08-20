@@ -10,7 +10,7 @@ public sealed class IndexingService
     }
 
     public IndexingService(string userDataDirectory)
-        : this(userDataDirectory, new PdfPigContentExtractor())
+        : this(userDataDirectory, new CompositeDocumentExtractor())
     {
     }
 
@@ -45,26 +45,26 @@ public sealed class IndexingService
 
         Directory.CreateDirectory(UserDataDirectory);
 
-        var pdfs = await Task.Run(
-            () => DiscoverPdfs(folderPath).ToArray(),
+        var files = await Task.Run(
+            () => DiscoverIndexableFiles(folderPath).ToArray(),
             cancellationToken).ConfigureAwait(false);
 
         var errors = new List<IndexingError>();
         var documents = new List<IndexedDocument>();
-        Report(progress, pdfs.Length, processedCount: 0, currentFile: null, "PDF를 찾는 중", errors, completed: false);
+        Report(progress, files.Length, processedCount: 0, currentFile: null, "문서를 찾는 중", errors, completed: false);
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
         var previous = store.GetAll().ToDictionary(doc => doc.FilePath, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var pdf in pdfs)
+        foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Report(progress, pdfs.Length, documents.Count, pdf, "본문 추출·OCR", errors, completed: false);
+            Report(progress, files.Length, documents.Count, file, "본문 추출·OCR", errors, completed: false);
 
             try
             {
-                previous.TryGetValue(pdf, out var existing);
-                var document = IndexPdfReadOnly(pdf, existing, cancellationToken);
+                previous.TryGetValue(file, out var existing);
+                var document = IndexFileReadOnly(file, existing, cancellationToken);
                 store.Upsert(document);
                 documents.Add(document);
             }
@@ -72,17 +72,17 @@ public sealed class IndexingService
             {
                 errors.Add(new IndexingError
                 {
-                    FilePath = pdf,
+                    FilePath = file,
                     Message = ex.Message,
                 });
             }
 
-            Report(progress, pdfs.Length, documents.Count, pdf, "본문 추출·OCR", errors, completed: false);
+            Report(progress, files.Length, documents.Count, file, "본문 추출·OCR", errors, completed: false);
         }
 
         var result = new IndexingResult
         {
-            FoundCount = pdfs.Length,
+            FoundCount = files.Length,
             ProcessedCount = documents.Count,
             Errors = errors.ToArray(),
             Documents = documents.ToArray(),
@@ -127,17 +127,17 @@ public sealed class IndexingService
             CompositeOcrEngine.CreateDefault().IsAvailable);
     }
 
-    private static IEnumerable<string> DiscoverPdfs(string folderPath) =>
+    private static IEnumerable<string> DiscoverIndexableFiles(string folderPath) =>
         Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
-            .Where(path => path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            .Where(IndexableFiles.IsIndexable)
             .Select(Path.GetFullPath)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
-    private IndexedDocument IndexPdfReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken)
+    private IndexedDocument IndexFileReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken)
     {
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException("PDF was removed before it could be indexed.", path);
+            throw new FileNotFoundException("Document was removed before it could be indexed.", path);
         }
 
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))

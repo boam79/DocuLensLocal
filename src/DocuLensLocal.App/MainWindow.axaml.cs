@@ -337,6 +337,7 @@ public partial class MainWindow : Window
         {
             FileName = Path.GetFileName(hit.Document.FilePath),
             FilePath = hit.Document.FilePath,
+            KindLabel = IndexableFiles.Badge(hit.Document.FilePath),
             Snippet = hit.Snippet,
             MatchLabel = hit.MatchLabelKo,
             HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
@@ -492,6 +493,7 @@ public partial class MainWindow : Window
     {
         public required string FileName { get; init; }
         public required string FilePath { get; init; }
+        public string KindLabel { get; init; } = "파일";
         public string Snippet { get; init; } = string.Empty;
         public string MatchLabel { get; init; } = string.Empty;
         public bool HasSnippet { get; init; }

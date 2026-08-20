@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.13</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.14</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -34,6 +34,8 @@ public class SolutionSmokeTests
         Assert.Contains("x:Name=\"IdleHintPanel\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"버스 광고\"", axaml, StringComparison.Ordinal);
         Assert.Contains("파일명이나 본문 단어로 찾아 보세요", axaml, StringComparison.Ordinal);
+        Assert.Contains("검색할 PDF, Word, 한글(HWP) 파일이 들어 있는 폴더를 선택하세요", axaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"{Binding KindLabel}\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -42,6 +44,7 @@ public class SolutionSmokeTests
         var csproj = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "DocuLensLocal.Core.csproj"));
 
         Assert.Contains("Include=\"Tesseract\"", csproj, StringComparison.Ordinal);
+        Assert.Contains("Include=\"HwpLibSharp\"", csproj, StringComparison.Ordinal);
     }
 
     [Fact]

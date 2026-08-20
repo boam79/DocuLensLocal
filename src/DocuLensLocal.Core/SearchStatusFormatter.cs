@@ -17,12 +17,12 @@ public static class SearchStatusFormatter
     {
         if (documentCount == 0)
         {
-            return "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다.";
+            return "인덱싱된 문서가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다.";
         }
 
         if (indexingNow && bodyCount == 0)
         {
-            return "파일명에 그 단어가 없습니다. 지금 PDF 본문을 읽고 있으니 잠시 후 다시 검색하세요.";
+            return "파일명에 그 단어가 없습니다. 지금 문서 본문을 읽고 있으니 잠시 후 다시 검색하세요.";
         }
 
         if (bodyCount == 0)
@@ -43,6 +43,6 @@ public static class SearchIdleCopy
 
     public static string Hint(IndexCoverage coverage) =>
         coverage.DocumentCount <= 0
-            ? "아직 인덱싱된 PDF가 없습니다."
+            ? "아직 인덱싱된 문서가 없습니다."
             : $"{coverage.DocumentCount}개 문서에서 파일명과 본문을 찾습니다.";
 }
