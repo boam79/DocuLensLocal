@@ -11,7 +11,7 @@ public sealed class PdfPigContentExtractor : IPdfContentExtractor
     private readonly IPdfPageRasterizer _rasterizer;
 
     public PdfPigContentExtractor()
-        : this(new TesseractCliOcrEngine(), new PdfToImageRasterizer())
+        : this(CompositeOcrEngine.CreateDefault(), new PdfToImageRasterizer())
     {
     }
 

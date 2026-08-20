@@ -28,6 +28,20 @@ public partial class MainWindow : Window
         InitializeComponent();
         LoadInfoPanel();
         ApplyStartupView();
+        Opened += OnOpened;
+    }
+
+    private async void OnOpened(object? sender, EventArgs e)
+    {
+        Opened -= OnOpened;
+        try
+        {
+            await TryPrepareOcrAndBackfillAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"본문 인덱스를 시작하지 못했습니다: {ex.Message}";
+        }
     }
 
     private void LoadInfoPanel()
@@ -179,6 +193,7 @@ public partial class MainWindow : Window
 
         try
         {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
             var result = await _indexing.Start(folder, progress, CancellationToken.None).ConfigureAwait(true);
             ShowResult(result);
         }
@@ -300,15 +315,11 @@ public partial class MainWindow : Window
         var coverage = _indexing.GetCoverage();
         if (all.Count == 0)
         {
-            SearchEmptyText.Text = "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다.";
-        }
-        else if (coverage.BodyCount == 0)
-        {
-            SearchEmptyText.Text = "파일명에 그 단어가 없습니다. 본문·OCR 검색은 「폴더 변경 / 다시 인덱싱」을 한 번 더 해야 합니다.";
+            SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(0, 0, _isIndexing);
         }
         else
         {
-            SearchEmptyText.Text = "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";
+            SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing);
         }
 
         SearchEmptyText.IsVisible = true;
@@ -316,10 +327,79 @@ public partial class MainWindow : Window
 
     private static string FormatCoverage(IReadOnlyList<IndexedDocument> all)
     {
-        var body = all.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText));
-        var ocrPages = all.Sum(doc => doc.OcrPageCount);
-        var ocr = TesseractCliOcrEngine.IsOnPath ? $"OCR {ocrPages}쪽" : "OCR 엔진 없음";
-        return $"인덱싱 완료 · {all.Count}건 · 본문 {body}건 · {ocr}";
+        var coverage = new IndexCoverage(
+            all.Count,
+            all.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText)),
+            all.Sum(doc => doc.OcrPageCount),
+            CompositeOcrEngine.CreateDefault().IsAvailable);
+        return SearchStatusFormatter.Coverage(coverage);
+    }
+
+    private async Task TryPrepareOcrAndBackfillAsync()
+    {
+        try
+        {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            // Digital PDF body search still works without tessdata.
+        }
+
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        var settings = LoadSettings();
+        if (!IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), settings.IndexFolder))
+        {
+            if (SearchPanel.IsVisible)
+            {
+                RunSearch();
+            }
+
+            return;
+        }
+
+        var folder = settings.IndexFolder!;
+        _isIndexing = true;
+        UpdateIndexButtonState();
+        IndexedSummaryText.Text = "본문 읽는 중…";
+        if (SearchPanel.IsVisible && string.IsNullOrWhiteSpace(SearchQueryBox.Text))
+        {
+            RunSearch();
+        }
+
+        var progress = new Progress<IndexingProgress>(snapshot =>
+        {
+            IndexedSummaryText.Text = SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount);
+            IndexCountText.Text = $"건수: {snapshot.ProcessedCount} / {snapshot.FoundCount}";
+            IndexCurrentFileText.Text = string.IsNullOrWhiteSpace(snapshot.CurrentFile)
+                ? "현재 파일: —"
+                : $"현재 파일: {Path.GetFileName(snapshot.CurrentFile)}";
+        });
+
+        try
+        {
+            await _indexing.Start(folder, progress, CancellationToken.None).ConfigureAwait(true);
+            settings.IndexCompleted = true;
+            SaveSettings(settings);
+            _showMainSearch = true;
+            if (SearchTab.IsChecked == true)
+            {
+                ShowMainSearch(resetSearch: false);
+            }
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"본문을 읽지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            _isIndexing = false;
+            UpdateIndexButtonState();
+        }
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)

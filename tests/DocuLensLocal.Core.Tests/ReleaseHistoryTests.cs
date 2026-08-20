@@ -5,16 +5,17 @@ namespace DocuLensLocal.Core.Tests;
 public class ReleaseHistoryTests
 {
     [Fact]
-    public void known_releases_cover_0_1_0_through_0_1_9_newest_first()
+    public void known_releases_cover_0_1_0_through_0_1_10_newest_first()
     {
         var versions = ReleaseHistory.Known.Select(note => note.Version).ToArray();
 
-        Assert.Equal(["0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1", "0.1.0"], versions);
+        Assert.Equal(["0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1", "0.1.0"], versions);
     }
 
     [Fact]
     public void known_releases_keep_short_korean_notes()
     {
+        Assert.Equal("본문 자동 인덱스·내장 OCR", Note("0.1.10").SummaryKo);
         Assert.Equal("버스광고 붙여 검색", Note("0.1.9").SummaryKo);
         Assert.Equal("버튼·목록 글자 표시", Note("0.1.8").SummaryKo);
         Assert.Equal("본문 검색·OCR·근거 문장", Note("0.1.7").SummaryKo);

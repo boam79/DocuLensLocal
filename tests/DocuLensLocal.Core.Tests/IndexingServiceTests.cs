@@ -244,6 +244,20 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task coverage_treats_stub_pdfs_as_filename_only_so_backfill_can_run()
+    {
+        WriteStubPdf(_pdfRoot, "empty-body.pdf");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_pdfRoot);
+
+        var coverage = service.GetCoverage();
+        Assert.Equal(1, coverage.DocumentCount);
+        Assert.Equal(0, coverage.BodyCount);
+        Assert.True(IndexBackfillPolicy.ShouldBackfill(coverage, _pdfRoot));
+    }
+
+    [Fact]
     public async Task concatenated_bus_ad_query_matches_split_filenames()
     {
         WriteStubPdf(_pdfRoot, "버스일정.pdf");

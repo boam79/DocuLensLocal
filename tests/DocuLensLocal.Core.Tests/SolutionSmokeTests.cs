@@ -21,6 +21,15 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.10</Version>", csproj, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void core_ships_tesseract_library_for_windows_ocr()
+    {
+        var csproj = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "DocuLensLocal.Core.csproj"));
+
+        Assert.Contains("Include=\"Tesseract\"", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -32,6 +41,10 @@ public class SolutionSmokeTests
         Assert.Contains("Resolve-Dotnet", packPs1, StringComparison.Ordinal);
         Assert.Contains("win-x64", packPs1, StringComparison.Ordinal);
         Assert.Contains("DocuLensLocal.exe", packPs1, StringComparison.Ordinal);
+        Assert.Contains("tessdata", packPs1, StringComparison.Ordinal);
+        Assert.Contains("eng.traineddata", packPs1, StringComparison.Ordinal);
+        Assert.Contains("kor.traineddata", packPs1, StringComparison.Ordinal);
+        Assert.Contains("tesseract50.dll", packPs1, StringComparison.Ordinal);
         Assert.DoesNotContain("osx-arm64", packPs1, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(FindRepoRoot(), "scripts", "pack.sh")));
     }

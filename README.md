@@ -5,7 +5,7 @@ Windows 10/11용 **로컬 PDF 문서 검색기**입니다. 탐색기 파일명 �
 개발은 Windows와 macOS 모두에서 `dotnet test` / `dotnet run`으로 합니다. Mac용 설치 파일은 만들지 않습니다.
 
 - 설치 대상: Windows 10/11 64비트
-- 스택: .NET 10, Avalonia, PdfPig, Tesseract(선택), 로컬 SQLite
+- 스택: .NET 10, Avalonia, PdfPig, 내장 Tesseract(kor/eng), 로컬 SQLite
 - 저장소: https://github.com/boam79/DocuLensLocal
 
 ## 탐색기와 다른 점
@@ -24,7 +24,7 @@ Windows 10/11용 **로컬 PDF 문서 검색기**입니다. 탐색기 파일명 �
 
 설치 파일 직접 주소:
 
-- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.9/DocuLensLocal-win-Setup.exe
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.10/DocuLensLocal-win-Setup.exe
 
 GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 
@@ -38,7 +38,7 @@ GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니
 
 다른 컴퓨터에 쓰려면 그 컴퓨터에도 이 설치 파일을 받아 설치하고, 그 PC에서 열 수 있는 PDF 폴더를 선택하세요. 폴더 이름이 `계약서`가 아니어도 됩니다.
 
-본문 검색·OCR은 v0.1.9 설치본과 이 저장소의 `dotnet run`에 들어 있습니다. 0.1.5에서 올린 인덱스는 파일명만 있을 수 있으니 **다시 인덱싱**하세요.
+본문 검색·OCR은 v0.1.10 설치본과 이 저장소의 `dotnet run`에 들어 있습니다. 예전에 파일명만 인덱싱된 경우, 앱을 켜면 **자동으로 본문을 다시 읽습니다.** 스캔 PDF는 설치본에 들어 있는 한국어/영어 OCR을 씁니다. Windows에 Tesseract를 따로 설치할 필요는 없습니다.
 
 ## 최초 실행
 
@@ -48,14 +48,15 @@ GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니
 - 본문: 검색할 PDF가 들어 있는 폴더를 선택하세요. 파일 이름만이 아니라 계약서 본문·스캔 OCR 글자까지 이 컴퓨터에서만 찾아 둡니다.
 - 보조: 다른 컴퓨터에서는 폴더 이름과 위치가 다를 수 있습니다. 그 컴퓨터에 있는 PDF 폴더를 새로 선택하면 됩니다.
 
-글자가 들어 있는 PDF는 기존 텍스트만 읽습니다. 스캔(이미지) 페이지는 이 컴퓨터의 Tesseract가 있을 때 OCR합니다. 사용자는 페이지가 하나씩 뜨는 화면을 보지 않습니다.
+글자가 들어 있는 PDF는 기존 텍스트만 읽습니다. 스캔(이미지) 페이지는 설치본에 들어 있는 Tesseract로 OCR합니다. 사용자는 페이지가 하나씩 뜨는 화면을 보지 않습니다.
 
-OCR을 쓰려면:
+Windows 설치본에는 한국어·영어 언어팩이 같이 들어 있습니다. 따로 Tesseract를 설치하지 않아도 됩니다.
 
-- Windows: [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) + kor/eng 언어팩
-- macOS: `brew install tesseract tesseract-lang`
+macOS에서 `dotnet run`으로 개발할 때만 스캔 OCR이 필요하면:
 
-없어도 디지털 PDF 본문 검색은 됩니다.
+```bash
+brew install tesseract tesseract-lang
+```
 
 ## 개발용으로 실행
 

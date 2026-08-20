@@ -117,13 +117,20 @@
 - 2026-08-20 (UI 점검): 화면에서 276건은 보이는데 검색 버튼·목록·하단 버튼 글자가 없음.
   - 원인: Avalonia `ContentPresenter`에 `Content="{TemplateBinding Content}"`가 없음.
   - 수정: 0.1.8. 인덱스는 살아 있음. 업데이트 후 파일명/본문이 목록에 보여야 함.
+- 2026-08-20 (0.1.10 Executor): 스크린샷 「본문 0건 / OCR 엔진 없음 / 부대」.
+  - 자동 재인덱스: `IndexBackfillPolicy` — 문서>0 && 본문==0 && 저장 폴더 존재 시 시작 직후 `IndexingService.Start`.
+  - OCR: charlesw Tesseract 5.2.0 (`tesseract50.dll`) + tessdata_fast kor/eng를 설치본에 포함. CLI는 보조.
+  - `dotnet test` 63/63. 사용자 확인 전 완료 표시 금지.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.7 업로드 완료, 사용자 업데이트 확인 대기)
+- 모드: **Executor** (v0.1.10 구현 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
-- origin/main: `daa2a33`. 릴리스 태그: v0.1.7
-- 다음: Windows 설치본 정보 탭에서 업데이트, 또는 Setup.exe 재설치. Mac은 git pull 후 `dotnet run`.
+- 화면 증상(사용자 스크린샷): `인덱싱 완료 · 276건 · 본문 0건 · OCR 엔진 없음`, `부대` 검색은 파일명만 봄.
+- 원인: 예전 파일명-only `index.db`를 그대로 씀. Windows에 Tesseract가 PATH에 없어 OCR 배지까지 꺼짐.
+- 이번 슬라이스: 설치본에 Tesseract native + tessdata(kor/eng) 포함. 본문 0건이면 저장된 폴더를 자동 재인덱스. 버전 0.1.10.
+- `dotnet test` 63/63 (Linux 클라우드).
+- 다음: 팩·GitHub Release v0.1.10 업로드 후 사용자에게 정보 탭 **업데이트** 요청.
 
 ---
 
@@ -174,4 +181,7 @@
 - WPF(`net10.0-windows`)는 Mac에서 빌드·실행이 안 된다. 데스크톱 UI는 Avalonia + `net10.0`으로 둔다. Mac 경로는 `LocalApplicationData` → `~/Library/Application Support/DocuLensLocal`.
 - 사용자는 Mac 설치본을 원하지 않는다. Mac은 `dotnet run`으로 개발·기능 테스트만. `pack.ps1`은 Windows Setup.exe만 만든다.
 - 파일명만 인덱싱하면 탐색기와 차별이 없다. 디지털 PDF는 PdfPig 본문, 스캔은 로컬 Tesseract. 검색 결과는 근거 스니펫이 있어야 한다.
+- Windows 사용자는 Tesseract를 따로 설치하지 않는다. 설치본에 `x64/tesseract50.dll` + `tessdata/eng|kor.traineddata`(tessdata_fast)를 넣고, PATH CLI는 보조만 쓴다.
+- 예전 인덱스(본문 0건)는 안내 문구만으로 해결되지 않는다. 저장된 `IndexFolder`가 있으면 시작 시 자동 재인덱싱해야 한다.
+- charlesw Tesseract 5.2.0 native 파일 이름은 `tesseract41.dll`이 아니라 `tesseract50.dll`이다.
 

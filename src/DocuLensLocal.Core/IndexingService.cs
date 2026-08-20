@@ -122,7 +122,7 @@ public sealed class IndexingService
             documents.Count,
             documents.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText)),
             documents.Sum(doc => doc.OcrPageCount),
-            TesseractCliOcrEngine.IsOnPath);
+            CompositeOcrEngine.CreateDefault().IsAvailable);
     }
 
     private static IEnumerable<string> DiscoverPdfs(string folderPath) =>
