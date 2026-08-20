@@ -120,6 +120,7 @@
 - 2026-08-20 (0.1.11 Executor): OCR 속도. 페이지마다 TesseractEngine 생성 + kor+eng 동시 로드가 병목.
   - 엔진 재사용, 한국어 우선(글자 적으면 영어 한 번), 회색조 120dpi JPEG, PDF 스트림 재사용, 본문 있는 파일은 건너뜀, 빈 페이지에 CLI 재실행 안 함.
   - `dotnet test` 66/66. 사용자: 정보 탭 업데이트 후 다시 인덱싱 체감 속도 확인.
+- 2026-08-20 (0.1.12 Executor): 초기 검색 화면은 검색창만. 빈 쿼리로 276건 전체 목록을 띄우지 않음. 검색 옆 **초기화**로 입력·결과를 지움. `dotnet test` 69/69.
 
 ## Current Status / Progress Tracking
 

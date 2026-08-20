@@ -109,6 +109,13 @@
                             CornerRadius="22"
                             Height="44">
                         <DockPanel>
+                            <Button x:Name="ResetSearchButton"
+                                    DockPanel.Dock="Right"
+                                    Classes="secondary"
+                                    Content="초기화"
+                                    Margin="0,6,6,6"
+                                    MinWidth="88"
+                                    Click="ResetSearchButton_OnClick"/>
                             <Button x:Name="SearchButton"
                                     DockPanel.Dock="Right"
                                     Classes="primary"

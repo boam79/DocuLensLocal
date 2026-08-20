@@ -21,7 +21,16 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.11</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.12</Version>", csproj, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void search_screen_has_reset_button_and_idle_copy()
+    {
+        var axaml = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.App", "MainWindow.axaml"));
+
+        Assert.Contains("x:Name=\"ResetSearchButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"초기화\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]

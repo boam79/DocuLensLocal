@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly IUpdateFeed _updateFeed;
     private bool _isIndexing;
     private bool _showMainSearch;
+    private bool _searchSubmitted;
 
     public MainWindow()
         : this(new VelopackUpdateFeed())
@@ -122,9 +123,18 @@ public partial class MainWindow : Window
         if (resetSearch)
         {
             SearchQueryBox.Text = string.Empty;
+            _searchSubmitted = false;
         }
 
-        RunSearch();
+        if (_searchSubmitted)
+        {
+            RunSearch();
+        }
+        else
+        {
+            ShowIdleSearch();
+        }
+
         if (resetSearch)
         {
             SearchQueryBox.Focus();
@@ -238,6 +248,14 @@ public partial class MainWindow : Window
 
     private void SearchButton_OnClick(object? sender, RoutedEventArgs e) => RunSearch();
 
+    private void ResetSearchButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        SearchQueryBox.Text = string.Empty;
+        _searchSubmitted = false;
+        ShowIdleSearch();
+        SearchQueryBox.Focus();
+    }
+
     private void SearchQueryBox_OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -275,53 +293,46 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RunSearch()
+    private void ShowIdleSearch()
     {
         var all = _indexing.GetIndexedDocuments();
+        IndexedSummaryText.Text = FormatCoverage(all);
+        SearchResultsList.ItemsSource = null;
+        SearchEmptyText.IsVisible = false;
+    }
+
+    private void RunSearch()
+    {
         var query = SearchQueryBox.Text;
-        IReadOnlyList<SearchResultRow> rows;
-        if (string.IsNullOrWhiteSpace(query))
+        _searchSubmitted = !string.IsNullOrWhiteSpace(query);
+        if (SearchListModeResolver.Resolve(query, _searchSubmitted, hitCount: 1) == SearchListMode.Idle)
         {
-            rows = all.Select(doc => new SearchResultRow
-            {
-                FileName = Path.GetFileName(doc.FilePath),
-                FilePath = doc.FilePath,
-                Snippet = EvidenceSnippet.From(doc.BodyText, []),
-                MatchLabel = doc.OcrPageCount > 0 ? "OCR 포함" : (string.IsNullOrWhiteSpace(doc.BodyText) ? "파일명만" : "본문 인덱스"),
-                HasSnippet = !string.IsNullOrWhiteSpace(doc.BodyText),
-            }).ToList();
+            ShowIdleSearch();
+            return;
         }
-        else
+
+        var all = _indexing.GetIndexedDocuments();
+        var rows = _indexing.Search(query!).Select(hit => new SearchResultRow
         {
-            rows = _indexing.Search(query).Select(hit => new SearchResultRow
-            {
-                FileName = Path.GetFileName(hit.Document.FilePath),
-                FilePath = hit.Document.FilePath,
-                Snippet = hit.Snippet,
-                MatchLabel = hit.MatchLabelKo,
-                HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
-            }).ToList();
-        }
+            FileName = Path.GetFileName(hit.Document.FilePath),
+            FilePath = hit.Document.FilePath,
+            Snippet = hit.Snippet,
+            MatchLabel = hit.MatchLabelKo,
+            HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
+        }).ToList();
 
         IndexedSummaryText.Text = FormatCoverage(all);
         SearchResultsList.ItemsSource = rows;
 
-        if (rows.Count > 0)
+        var mode = SearchListModeResolver.Resolve(query, _searchSubmitted, rows.Count);
+        if (mode == SearchListMode.Hits)
         {
             SearchEmptyText.IsVisible = false;
             return;
         }
 
         var coverage = _indexing.GetCoverage();
-        if (all.Count == 0)
-        {
-            SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(0, 0, _isIndexing);
-        }
-        else
-        {
-            SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing);
-        }
-
+        SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing);
         SearchEmptyText.IsVisible = true;
     }
 
@@ -356,7 +367,14 @@ public partial class MainWindow : Window
         {
             if (SearchPanel.IsVisible)
             {
-                RunSearch();
+                if (_searchSubmitted)
+                {
+                    RunSearch();
+                }
+                else
+                {
+                    ShowIdleSearch();
+                }
             }
 
             return;
@@ -366,9 +384,14 @@ public partial class MainWindow : Window
         _isIndexing = true;
         UpdateIndexButtonState();
         IndexedSummaryText.Text = "본문 읽는 중…";
-        if (SearchPanel.IsVisible && string.IsNullOrWhiteSpace(SearchQueryBox.Text))
+        if (SearchPanel.IsVisible && _searchSubmitted)
         {
             RunSearch();
+        }
+        else if (SearchPanel.IsVisible)
+        {
+            SearchResultsList.ItemsSource = null;
+            SearchEmptyText.IsVisible = false;
         }
 
         var progress = new Progress<IndexingProgress>(snapshot =>
