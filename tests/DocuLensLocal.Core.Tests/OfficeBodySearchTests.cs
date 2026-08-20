@@ -17,6 +17,7 @@ public class IndexableFilesTests
     [InlineData("notes.txt", IndexableFileKind.Unknown, "파일")]
     [InlineData("~$lock.docx", IndexableFileKind.Unknown, "파일")]
     [InlineData("~$lock.xlsx", IndexableFileKind.Unknown, "파일")]
+    [InlineData("~lock.hwp", IndexableFileKind.Unknown, "파일")]
     public void classifies_supported_extensions_and_skips_lock_files(string path, IndexableFileKind kind, string badge)
     {
         Assert.Equal(kind, IndexableFiles.KindOf(path));
@@ -216,6 +217,18 @@ public class OfficeBodySearchTests : IDisposable
         var hit = Assert.Single(service.Search("버스 광고"));
         Assert.Equal(SearchMatchKind.Body, hit.MatchKind);
         Assert.Equal("XLSX", IndexableFiles.Badge(hit.Document.FilePath));
+    }
+
+    [Fact]
+    public void hwp_and_hwpx_text_is_read_while_another_handle_holds_write_share()
+    {
+        var hwp = TestOfficeFactory.WriteHwp(_docsRoot, "공문.hwp", "부대 시설 사용 계약");
+        var hwpx = TestOfficeFactory.WriteHwpx(_docsRoot, "공문.hwpx", "버스 광고 계약");
+        using var hwpHandle = new FileStream(hwp, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+        using var hwpxHandle = new FileStream(hwpx, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+
+        Assert.Contains("부대 시설", HwpBinaryTextExtractor.Extract(hwp), StringComparison.Ordinal);
+        Assert.Contains("버스 광고 계약", ZipOfficeTextExtractor.Extract(hwpx), StringComparison.Ordinal);
     }
 
     [Fact]

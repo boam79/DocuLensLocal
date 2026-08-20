@@ -22,7 +22,7 @@ public static class HwpBinaryTextExtractor
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var stream = OfficeFileAccess.OpenRead(path);
             var hwp = HWPReader.FromStream(stream);
             var option = new TextExtractOption();
             option.SetMethod(TextExtractMethod.InsertControlTextBetweenParagraphText);
@@ -48,7 +48,7 @@ public static class HwpBinaryTextExtractor
 
             return new HwpExtracted(text, images);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return HwpExtracted.Empty;
         }

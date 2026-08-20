@@ -398,6 +398,25 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 - 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 
+## Background and Motivation (2026-08-20 엑셀·HWP 인덱싱 재확인)
+
+사용자: 인덱싱이 안 되니 다시 확인하고, HWP도 되는지 확인해 달라.
+
+원인: 엑셀·한글을 한 번 빈 본문(`filename_only`)으로 저장하면 `NewAndChanged`가 크기·mtime이 같다고 건너뛴다. 앱을 업데이트해도, **새 파일 인덱싱**을 눌러도 다시 안 읽는다. HWP 추출은 예외를 삼켜 빈 본문으로 남겼다.
+
+## High-level Task Breakdown (2026-08-20 엑셀·HWP 인덱싱 재확인)
+
+### Task M — 빈 본문 엑셀·한글 다시 읽기
+
+- 성공 기준: 본문이 비어 있는 xlsx/hwp는 증분 패스에서 다시 추출. 빈 PDF는 반복 OCR하지 않음. HWP/HWPX는 한글이 연 상태에서도 공유 읽기. `dotnet test` 통과. 버전 0.1.23.
+
+## Current Status / Progress Tracking (2026-08-20 엑셀·HWP 인덱싱 재확인)
+
+- 모드: **Executor** (엑셀·HWP 다시 읽기 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 131/131. 버전 0.1.23.
+
+
 ## Executor's Feedback or Assistance Requests
 
 - 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 업로드. Setup.exe를 `-Wait`로 실행하지 않음.

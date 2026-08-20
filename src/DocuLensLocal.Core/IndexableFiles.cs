@@ -23,7 +23,7 @@ public static class IndexableFiles
         }
 
         var name = Path.GetFileName(path);
-        if (name.StartsWith("~$", StringComparison.Ordinal) || name.StartsWith('.'))
+        if (name.StartsWith('~') || name.StartsWith('.'))
         {
             return IndexableFileKind.Unknown;
         }

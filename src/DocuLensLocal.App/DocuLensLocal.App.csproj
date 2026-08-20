@@ -10,7 +10,7 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>DocuLensLocal</AssemblyName>
     <RootNamespace>DocuLensLocal.App</RootNamespace>
-    <Version>0.1.22</Version>
+    <Version>0.1.23</Version>
     <Product>DocuLens Local</Product>
   </PropertyGroup>
 

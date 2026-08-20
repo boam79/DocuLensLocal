@@ -39,7 +39,7 @@ public static class IndexWatchPolicy
         }
 
         var name = Path.GetFileName(path);
-        if (name.StartsWith("~$", StringComparison.Ordinal))
+        if (name.StartsWith('~'))
         {
             return true;
         }

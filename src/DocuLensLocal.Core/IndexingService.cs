@@ -131,6 +131,12 @@ public sealed class IndexingService
             if (!IndexFreshness.IsUnchanged(existing, new FileInfo(file)))
             {
                 changedCount++;
+                continue;
+            }
+
+            if (IndexFreshness.NeedsBodyRetry(existing, file))
+            {
+                changedCount++;
             }
         }
 
@@ -218,7 +224,7 @@ public sealed class IndexingService
 
         var info = new FileInfo(path);
         var skipExtract = pass == IndexPass.NewAndChanged
-            ? IndexFreshness.IsUnchanged(existing, info)
+            ? IndexFreshness.ShouldSkipOnIncremental(existing, info, IndexableFiles.KindOf(path))
             : IndexFreshness.CanReuse(existing, info);
         if (skipExtract)
         {

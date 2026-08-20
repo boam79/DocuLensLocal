@@ -7,6 +7,30 @@ public static class IndexFreshness
         && !string.IsNullOrWhiteSpace(existing.BodyText)
         && IsUnchanged(existing, info);
 
+    public static bool ShouldSkipOnIncremental(IndexedDocument? existing, FileInfo info, IndexableFileKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+        if (!IsUnchanged(existing, info))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(existing!.BodyText))
+        {
+            return true;
+        }
+
+        return kind == IndexableFileKind.Pdf;
+    }
+
+    public static bool NeedsBodyRetry(IndexedDocument existing, string path)
+    {
+        ArgumentNullException.ThrowIfNull(existing);
+        return string.IsNullOrWhiteSpace(existing.BodyText)
+            && IndexableFiles.IsIndexable(path)
+            && IndexableFiles.KindOf(path) != IndexableFileKind.Pdf;
+    }
+
     public static bool IsUnchanged(IndexedDocument? existing, FileInfo info)
     {
         ArgumentNullException.ThrowIfNull(info);

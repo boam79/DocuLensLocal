@@ -387,6 +387,27 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task incremental_pass_rereads_empty_xlsx_body()
+    {
+        TestOfficeFactory.WriteXlsx(_pdfRoot, "견적.xlsx", "본 버스 광고 계약");
+        var extractor = new QueueExtractor("", "본 버스 광고 계약");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal("", Assert.Single(service.GetIndexedDocuments()).BodyText);
+        Assert.Equal(1, extractor.Calls);
+
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.Equal(1, plan.ChangedCount);
+        Assert.True(plan.NeedsWork);
+
+        await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Equal(2, extractor.Calls);
+        var stored = Assert.Single(service.GetIndexedDocuments());
+        Assert.Contains("버스 광고", stored.BodyText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task incremental_pass_reextracts_when_file_contents_change()
     {
         var path = WriteStubPdf(_pdfRoot, "changed.pdf");
@@ -489,6 +510,22 @@ public class IndexingServiceTests : IDisposable
         {
             Calls++;
             return new(_body, PageCount: 1, OcrPageCount: 0, [new PdfPageContent(1, _body, "")]);
+        }
+    }
+
+    private sealed class QueueExtractor : IPdfContentExtractor
+    {
+        private readonly Queue<string> _bodies;
+
+        public QueueExtractor(params string[] bodies) => _bodies = new Queue<string>(bodies);
+
+        public int Calls { get; private set; }
+
+        public PdfExtractedContent Extract(string pdfPath, CancellationToken cancellationToken)
+        {
+            Calls++;
+            var body = _bodies.Count > 0 ? _bodies.Dequeue() : string.Empty;
+            return new(body, PageCount: 1, OcrPageCount: 0, [new PdfPageContent(1, body, "")]);
         }
     }
 

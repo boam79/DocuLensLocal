@@ -84,7 +84,52 @@ public class IndexSyncPolicyTests
         {
             Assert.True(IndexFreshness.IsUnchanged(existing, info));
             Assert.False(IndexFreshness.CanReuse(existing, info));
+            Assert.True(IndexFreshness.ShouldSkipOnIncremental(existing, info, IndexableFileKind.Pdf));
+            Assert.False(IndexFreshness.NeedsBodyRetry(existing, path));
             Assert.False(IndexFreshness.IsUnchanged(null, info));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void empty_xlsx_and_hwp_bodies_are_retried_on_incremental_sync()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "DocuLensSync", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var xlsx = Path.Combine(dir, "견적.xlsx");
+        var hwp = Path.Combine(dir, "공문.hwp");
+        File.WriteAllText(xlsx, "stub-xlsx");
+        File.WriteAllText(hwp, "stub-hwp");
+        var xlsxInfo = new FileInfo(xlsx);
+        var hwpInfo = new FileInfo(hwp);
+        var emptyXlsx = new IndexedDocument
+        {
+            FilePath = xlsx,
+            SizeBytes = xlsxInfo.Length,
+            LastWriteTimeUtc = new DateTimeOffset(xlsxInfo.LastWriteTimeUtc, TimeSpan.Zero),
+            IndexedAtUtc = DateTimeOffset.UtcNow,
+            BodyText = "",
+            Status = "filename_only",
+        };
+        var emptyHwp = new IndexedDocument
+        {
+            FilePath = hwp,
+            SizeBytes = hwpInfo.Length,
+            LastWriteTimeUtc = new DateTimeOffset(hwpInfo.LastWriteTimeUtc, TimeSpan.Zero),
+            IndexedAtUtc = DateTimeOffset.UtcNow,
+            BodyText = "",
+            Status = "filename_only",
+        };
+
+        try
+        {
+            Assert.False(IndexFreshness.ShouldSkipOnIncremental(emptyXlsx, xlsxInfo, IndexableFileKind.Xlsx));
+            Assert.True(IndexFreshness.NeedsBodyRetry(emptyXlsx, xlsx));
+            Assert.False(IndexFreshness.ShouldSkipOnIncremental(emptyHwp, hwpInfo, IndexableFileKind.Hwp));
+            Assert.True(IndexFreshness.NeedsBodyRetry(emptyHwp, hwp));
         }
         finally
         {
