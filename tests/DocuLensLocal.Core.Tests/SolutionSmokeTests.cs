@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.16</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.17</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -32,6 +32,12 @@ public class SolutionSmokeTests
         Assert.Contains("x:Name=\"ResetSearchButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"초기화\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"IdleHintPanel\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"IdleFormatBadges\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"PDF\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"WORD\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"HWP\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("PDF · Word · 한글(HWP) 파일을 찾을 수 있습니다", axaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Text=\"문서\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"버스 광고\"", axaml, StringComparison.Ordinal);
         Assert.Contains("파일명이나 본문 단어로 찾아 보세요", axaml, StringComparison.Ordinal);
         Assert.Contains("검색할 PDF, Word, 한글(HWP) 파일이 들어 있는 폴더를 선택하세요", axaml, StringComparison.Ordinal);

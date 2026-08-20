@@ -236,10 +236,28 @@
 - 모드: **Executor** (Word·HWP 스캔 OCR·업데이트 팝업 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - `dotnet test` 97/97. App 빌드 성공. 버전 0.1.16.
+- **v0.1.16 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.16/DocuLensLocal-win-Setup.exe
 - 글자가 거의 없는 Word/HWP는 큰 그림을 OCR. 글자가 많은 파일은 텍스트만(로고 OCR 생략).
 - 시작 시 새 버전 팝업(확인/나중에). 확인 후 재시작되면 업데이트 내역 팝업.
 - 예전에 인덱싱한 스캔 Word/HWP는 **처음부터 다시 인덱싱** 필요.
+- 사용자 확인: 시작 팝업, 스캔 HWP/Word 검색, 원본 파일 그대로인지. 완료 표시는 사용자 확인 후.
 
+## Background and Motivation (2026-08-20 검색 화면 파일 형식)
+
+사용자: 검색 화면 가운데 「문서」 표시를 PDF, WORD, HWP로 바꿔, 어떤 파일이 가능한지 한눈에 알게 해 달라.
+
+## High-level Task Breakdown (2026-08-20 검색 화면 파일 형식)
+
+### Task G — 빈 검색 화면에 PDF·WORD·HWP
+
+- 성공 기준: IdleHintPanel에 「문서」 한 칸 대신 PDF / WORD / HWP 세 칸. 안내 문구에 지원 형식이 보임. `dotnet test` 통과. 버전 0.1.17.
+
+## Current Status / Progress Tracking (2026-08-20 검색 화면 파일 형식)
+
+- 모드: **Executor** (검색 화면 PDF·WORD·HWP — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 가운데 「문서」 칸을 빨강 PDF / 파랑 WORD / 틸 HWP 세 칸으로 바꿈.
+- 아래에 「PDF · Word · 한글(HWP) 파일을 찾을 수 있습니다」 안내.
 
 ## Executor's Feedback or Assistance Requests
 

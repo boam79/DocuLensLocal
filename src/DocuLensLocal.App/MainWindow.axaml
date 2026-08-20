@@ -160,19 +160,51 @@
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     MaxWidth="440">
-                            <Border Width="64"
-                                    Height="64"
-                                    CornerRadius="20"
-                                    HorizontalAlignment="Center"
-                                    Background="{StaticResource ChipBrush}">
-                                <TextBlock Text="문서"
-                                           FontSize="14"
-                                           FontWeight="Bold"
-                                           Foreground="{StaticResource AccentDarkBrush}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock Margin="0,16,0,0"
+                            <StackPanel x:Name="IdleFormatBadges"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Spacing="12">
+                                <Border Width="72"
+                                        Height="72"
+                                        CornerRadius="20"
+                                        Background="{StaticResource PdfBadgeBrush}">
+                                    <TextBlock Text="PDF"
+                                               FontSize="16"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource PdfBadgeTextBrush}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                                <Border Width="72"
+                                        Height="72"
+                                        CornerRadius="20"
+                                        Background="{StaticResource WordBadgeBrush}">
+                                    <TextBlock Text="WORD"
+                                               FontSize="15"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource WordBadgeTextBrush}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                                <Border Width="72"
+                                        Height="72"
+                                        CornerRadius="20"
+                                        Background="{StaticResource HwpBadgeBrush}">
+                                    <TextBlock Text="HWP"
+                                               FontSize="16"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource HwpBadgeTextBrush}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Margin="0,14,0,0"
+                                       FontSize="13"
+                                       Foreground="{StaticResource ChipTextBrush}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Text="PDF · Word · 한글(HWP) 파일을 찾을 수 있습니다"/>
+                            <TextBlock Margin="0,12,0,0"
                                        FontSize="16"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TitleBrush}"

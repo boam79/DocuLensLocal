@@ -26,7 +26,7 @@ Windows 10/11용 **로컬 문서 검색기**입니다. 탐색기 파일명 검�
 
 설치 파일 직접 주소:
 
-- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.16/DocuLensLocal-win-Setup.exe
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.17/DocuLensLocal-win-Setup.exe
 
 GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 
