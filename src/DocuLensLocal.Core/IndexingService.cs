@@ -32,10 +32,17 @@ public sealed class IndexingService
     public Task<IndexingResult> Start(string folderPath, CancellationToken cancellationToken = default) =>
         Start(folderPath, progress: null, cancellationToken);
 
+    public Task<IndexingResult> Start(
+        string folderPath,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default) =>
+        Start(folderPath, progress, cancellationToken, IndexPass.FillMissingBody);
+
     public async Task<IndexingResult> Start(
         string folderPath,
         IProgress<IndexingProgress>? progress,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken,
+        IndexPass pass)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
         if (!Directory.Exists(folderPath))
@@ -51,6 +58,7 @@ public sealed class IndexingService
 
         var errors = new List<IndexingError>();
         var documents = new List<IndexedDocument>();
+        var phaseKo = pass == IndexPass.NewAndChanged ? "새 파일만 읽는 중" : "본문 추출·OCR";
         Report(progress, files.Length, processedCount: 0, currentFile: null, "문서를 찾는 중", errors, completed: false);
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
@@ -59,12 +67,12 @@ public sealed class IndexingService
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Report(progress, files.Length, documents.Count, file, "본문 추출·OCR", errors, completed: false);
+            Report(progress, files.Length, documents.Count, file, phaseKo, errors, completed: false);
 
             try
             {
                 previous.TryGetValue(file, out var existing);
-                var document = IndexFileReadOnly(file, existing, cancellationToken);
+                var document = IndexFileReadOnly(file, existing, cancellationToken, pass);
                 store.Upsert(document);
                 documents.Add(document);
             }
@@ -77,7 +85,7 @@ public sealed class IndexingService
                 });
             }
 
-            Report(progress, files.Length, documents.Count, file, "본문 추출·OCR", errors, completed: false);
+            Report(progress, files.Length, documents.Count, file, phaseKo, errors, completed: false);
         }
 
         store.KeepOnly(files);
@@ -92,6 +100,43 @@ public sealed class IndexingService
         };
         Report(progress, result.FoundCount, result.ProcessedCount, currentFile: null, "완료", errors, completed: true);
         return result;
+    }
+
+    public IndexSyncPlan PlanSync(string folderPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
+        if (!Directory.Exists(folderPath))
+        {
+            return new IndexSyncPlan(0, 0, 0);
+        }
+
+        var files = DiscoverIndexableFiles(folderPath).ToArray();
+        if (!File.Exists(IndexDatabasePath))
+        {
+            return new IndexSyncPlan(files.Length, 0, 0);
+        }
+
+        using var store = new DocumentIndexStore(IndexDatabasePath);
+        var previous = store.GetAll().ToDictionary(doc => doc.FilePath, StringComparer.OrdinalIgnoreCase);
+        var newCount = 0;
+        var changedCount = 0;
+        foreach (var file in files)
+        {
+            if (!previous.TryGetValue(file, out var existing))
+            {
+                newCount++;
+                continue;
+            }
+
+            if (!IndexFreshness.IsUnchanged(existing, new FileInfo(file)))
+            {
+                changedCount++;
+            }
+        }
+
+        var fileSet = new HashSet<string>(files, StringComparer.OrdinalIgnoreCase);
+        var removedCount = previous.Keys.Count(path => !fileSet.Contains(path));
+        return new IndexSyncPlan(newCount, changedCount, removedCount);
     }
 
     public IReadOnlyList<IndexedDocument> GetIndexedDocuments()
@@ -159,7 +204,7 @@ public sealed class IndexingService
             .Select(Path.GetFullPath)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
-    private IndexedDocument IndexFileReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken)
+    private IndexedDocument IndexFileReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken, IndexPass pass)
     {
         if (!File.Exists(path))
         {
@@ -172,7 +217,10 @@ public sealed class IndexingService
         }
 
         var info = new FileInfo(path);
-        if (IndexFreshness.CanReuse(existing, info))
+        var skipExtract = pass == IndexPass.NewAndChanged
+            ? IndexFreshness.IsUnchanged(existing, info)
+            : IndexFreshness.CanReuse(existing, info);
+        if (skipExtract)
         {
             return existing!;
         }

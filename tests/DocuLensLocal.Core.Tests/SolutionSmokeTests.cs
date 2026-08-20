@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.18</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.19</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -43,6 +43,8 @@ public class SolutionSmokeTests
         Assert.Contains("검색할 PDF, Word, 한글(HWP) 파일이 들어 있는 폴더를 선택하세요", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"RebuildIndexButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"처음부터 다시 인덱싱\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SyncIndexButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"새 파일 인덱싱\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"폴더 변경\"", axaml, StringComparison.Ordinal);
     }
 
@@ -66,7 +68,8 @@ public class SolutionSmokeTests
         Assert.Contains("IndexingInProgress", settings, StringComparison.Ordinal);
         Assert.Contains("IndexResumePolicy.ShouldResume", window, StringComparison.Ordinal);
         Assert.Contains("CancelIndexingForUpdate", window, StringComparison.Ordinal);
-        Assert.Contains("IndexingWouldResume", window, StringComparison.Ordinal);
+        Assert.Contains("IndexPass.NewAndChanged", window, StringComparison.Ordinal);
+        Assert.Contains("PlanSync", window, StringComparison.Ordinal);
     }
 
     [Fact]

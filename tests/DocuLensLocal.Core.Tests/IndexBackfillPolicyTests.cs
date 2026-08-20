@@ -88,6 +88,15 @@ public class SearchStatusFormatterTests
     }
 
     [Fact]
+    public void new_files_progress_does_not_sound_like_a_full_rebuild()
+    {
+        var text = SearchStatusFormatter.NewFilesProgress(1, 3);
+
+        Assert.Contains("새 파일", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("지우고", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void empty_results_tell_the_user_body_is_being_read()
     {
         var text = SearchStatusFormatter.EmptyResults(documentCount: 276, bodyCount: 0, indexingNow: true);

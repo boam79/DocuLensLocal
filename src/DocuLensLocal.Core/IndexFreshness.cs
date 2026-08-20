@@ -2,10 +2,15 @@ namespace DocuLensLocal.Core;
 
 public static class IndexFreshness
 {
-    public static bool CanReuse(IndexedDocument? existing, FileInfo info)
+    public static bool CanReuse(IndexedDocument? existing, FileInfo info) =>
+        existing is not null
+        && !string.IsNullOrWhiteSpace(existing.BodyText)
+        && IsUnchanged(existing, info);
+
+    public static bool IsUnchanged(IndexedDocument? existing, FileInfo info)
     {
         ArgumentNullException.ThrowIfNull(info);
-        if (existing is null || string.IsNullOrWhiteSpace(existing.BodyText))
+        if (existing is null)
         {
             return false;
         }

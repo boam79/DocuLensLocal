@@ -267,6 +267,9 @@ public partial class MainWindow : Window
             && Directory.Exists(folder);
         SelectFolderButton.IsEnabled = !_isIndexing;
         ChangeFolderButton.IsEnabled = !_isIndexing;
+        SyncIndexButton.IsEnabled = !_isIndexing
+            && !string.IsNullOrWhiteSpace(folder)
+            && Directory.Exists(folder);
         RebuildIndexButton.IsEnabled = !_isIndexing
             && !string.IsNullOrWhiteSpace(folder)
             && Directory.Exists(folder);
@@ -407,6 +410,96 @@ public partial class MainWindow : Window
         SearchTab.IsChecked = true;
         ShowFirstRun();
         IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 그 폴더로 목록을 맞춥니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+    }
+
+    private async void SyncIndexButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = LoadSettings().IndexFolder;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            _showMainSearch = false;
+            SearchTab.IsChecked = true;
+            ShowFirstRun();
+            IndexStatusText.Text = "폴더를 먼저 선택한 뒤 인덱싱하세요.";
+            return;
+        }
+
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        var plan = _indexing.PlanSync(folder);
+        if (!plan.NeedsWork)
+        {
+            _showMainSearch = true;
+            SearchTab.IsChecked = true;
+            ShowMainSearch(resetSearch: false);
+            IdleHintText.Text = "새로 넣은 파일이 없습니다. 이미 읽은 파일은 그대로 둡니다.";
+            return;
+        }
+
+        await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
+    }
+
+    private async Task RunIndexingPassAsync(string folder, IndexPass pass, string startMessage)
+    {
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        _isIndexing = true;
+        UpdateIndexButtonState();
+        _searchSubmitted = false;
+        SearchQueryBox.Text = string.Empty;
+        SearchResultsList.ItemsSource = null;
+        ApplySearchListMode(SearchListMode.Idle);
+        IndexedSummaryText.Text = startMessage;
+        IdleHintText.Text = pass == IndexPass.NewAndChanged
+            ? "이미 읽은 파일은 그대로 두고, 새로 넣거나 바뀐 파일만 읽습니다."
+            : "파일명이나 본문 단어로 찾아 보세요";
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
+
+        var progress = new Progress<IndexingProgress>(snapshot =>
+        {
+            IndexedSummaryText.Text = pass == IndexPass.NewAndChanged
+                ? SearchStatusFormatter.NewFilesProgress(snapshot.ProcessedCount, snapshot.FoundCount)
+                : SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount);
+        });
+
+        try
+        {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+            var indexing = _indexing.Start(folder, progress, IndexingToken(), pass);
+            _indexingTask = indexing;
+            var result = await indexing.ConfigureAwait(true);
+            var settings = LoadSettings();
+            IndexingRunState.OnFinished(settings, completed: result.IsCompleted);
+            SaveSettings(settings);
+            _showMainSearch = true;
+            if (SearchTab.IsChecked == true)
+            {
+                ShowMainSearch(resetSearch: true);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            IndexedSummaryText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "인덱싱을 잠시 멈췄습니다. 다시 켜면 남은 파일부터 이어서 읽습니다.";
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"인덱싱을 끝내지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            _indexingTask = null;
+            _isIndexing = false;
+            UpdateIndexButtonState();
+        }
     }
 
     private async void RebuildIndexButton_OnClick(object? sender, RoutedEventArgs e)
@@ -602,7 +695,12 @@ public partial class MainWindow : Window
         var settings = LoadSettings();
         var resume = IndexResumePolicy.ShouldResume(settings);
         var backfill = IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), settings.IndexFolder);
-        if (!resume && !backfill)
+        var folder = settings.IndexFolder;
+        var plan = !string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder)
+            ? _indexing.PlanSync(folder)
+            : new IndexSyncPlan(0, 0, 0);
+        var sync = !resume && !backfill && IndexSyncPolicy.ShouldAutoSync(settings, plan);
+        if (!resume && !backfill && !sync)
         {
             if (settings.IndexingInProgress)
             {
@@ -625,7 +723,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        var folder = settings.IndexFolder!;
+        if (sync && !string.IsNullOrWhiteSpace(folder))
+        {
+            await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
+            return;
+        }
+
+        folder = settings.IndexFolder!;
         _isIndexing = true;
         UpdateIndexButtonState();
         BeginIndexingCancellation();

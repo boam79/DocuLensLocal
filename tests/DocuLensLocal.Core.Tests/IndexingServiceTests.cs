@@ -345,6 +345,69 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task incremental_pass_indexes_only_newly_added_files()
+    {
+        WriteStubPdf(_pdfRoot, "already.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal(1, extractor.Calls);
+
+        WriteStubPdf(_pdfRoot, "added.pdf");
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.Equal(1, plan.NewCount);
+        Assert.Equal(0, plan.ChangedCount);
+        Assert.True(plan.NeedsWork);
+
+        var result = await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.True(result.IsCompleted);
+        Assert.Equal(2, result.FoundCount);
+        Assert.Equal(2, extractor.Calls);
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+        Assert.Contains(service.GetIndexedDocuments(), doc => doc.FilePath.Contains("added.pdf", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task incremental_pass_skips_unchanged_files_even_without_body()
+    {
+        WriteStubPdf(_pdfRoot, "scan.pdf");
+        var extractor = new CountingExtractor("");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal(1, extractor.Calls);
+
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.False(plan.NeedsWork);
+
+        await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Equal(1, extractor.Calls);
+        Assert.Single(service.GetIndexedDocuments());
+    }
+
+    [Fact]
+    public async Task incremental_pass_reextracts_when_file_contents_change()
+    {
+        var path = WriteStubPdf(_pdfRoot, "changed.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal(1, extractor.Calls);
+
+        File.WriteAllText(path, "%PDF-1.4 stub for indexing tests\n% bigger\n");
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(2));
+
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.Equal(1, plan.ChangedCount);
+        Assert.True(plan.NeedsWork);
+
+        await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Equal(2, extractor.Calls);
+    }
+
+    [Fact]
     public async Task start_drops_documents_that_are_no_longer_in_the_folder()
     {
         WriteStubPdf(_pdfRoot, "keep.pdf");

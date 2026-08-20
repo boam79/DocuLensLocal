@@ -312,6 +312,12 @@
                                 Classes="secondary"
                                 Content="폴더 변경"
                                 Click="ChangeFolderButton_OnClick"/>
+                        <Button x:Name="SyncIndexButton"
+                                DockPanel.Dock="Left"
+                                Classes="secondary"
+                                Margin="8,0,0,0"
+                                Content="새 파일 인덱싱"
+                                Click="SyncIndexButton_OnClick"/>
                         <Button x:Name="RebuildIndexButton"
                                 DockPanel.Dock="Left"
                                 Classes="secondary"
