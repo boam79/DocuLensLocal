@@ -76,7 +76,7 @@ public sealed class IndexingService
                 store.Upsert(document);
                 documents.Add(document);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidDataException)
             {
                 errors.Add(new IndexingError
                 {
@@ -211,7 +211,7 @@ public sealed class IndexingService
             throw new FileNotFoundException("Document was removed before it could be indexed.", path);
         }
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (OfficeFileAccess.OpenRead(path))
         {
             // Read-only probe so the original file is never opened for write.
         }
@@ -225,7 +225,7 @@ public sealed class IndexingService
             return existing!;
         }
 
-        var extracted = _extractor.Extract(path, cancellationToken);
+        var extracted = ExtractWithRetry(path, cancellationToken);
         var hasBody = !string.IsNullOrWhiteSpace(extracted.BodyText);
         var status = extracted.OcrPageCount > 0
             ? "ocr"
@@ -244,6 +244,31 @@ public sealed class IndexingService
             OcrPageCount = extracted.OcrPageCount,
             Status = status,
         };
+    }
+
+    private PdfExtractedContent ExtractWithRetry(string path, CancellationToken cancellationToken)
+    {
+        Exception? last = null;
+        for (var attempt = 0; attempt < 6; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return _extractor.Extract(path, cancellationToken);
+            }
+            catch (Exception ex) when (OfficeFileAccess.IsTransient(ex))
+            {
+                last = ex;
+                if (attempt == 5)
+                {
+                    break;
+                }
+
+                Thread.Sleep(200);
+            }
+        }
+
+        throw last ?? new IOException($"Could not read {path}");
     }
 
     private void Report(

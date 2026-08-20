@@ -186,6 +186,39 @@ public class OfficeBodySearchTests : IDisposable
     }
 
     [Fact]
+    public void xlsx_text_is_read_while_another_handle_holds_write_share()
+    {
+        var path = TestOfficeFactory.WriteXlsx(_docsRoot, "견적.xlsx", "본 버스 광고 계약 조항은 을의 의무를 정한다.");
+        using var excelLike = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+
+        var text = ExcelZipTextExtractor.Extract(path);
+
+        Assert.Contains("버스 광고 계약", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task incomplete_xlsx_is_not_stuck_and_is_indexed_when_the_real_file_arrives()
+    {
+        var path = Path.Combine(_docsRoot, "견적.xlsx");
+        File.WriteAllBytes(path, "not-a-zip"u8.ToArray());
+
+        var service = new IndexingService(_userData);
+        var first = await service.Start(_docsRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Empty(service.GetIndexedDocuments());
+        Assert.NotEmpty(first.Errors);
+        Assert.True(service.PlanSync(_docsRoot).NeedsWork);
+
+        File.Delete(path);
+        TestOfficeFactory.WriteXlsx(_docsRoot, "견적.xlsx", "본 버스 광고 계약 조항은 을의 의무를 정한다.");
+        await service.Start(_docsRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        var hit = Assert.Single(service.Search("버스 광고"));
+        Assert.Equal(SearchMatchKind.Body, hit.MatchKind);
+        Assert.Equal("XLSX", IndexableFiles.Badge(hit.Document.FilePath));
+    }
+
+    [Fact]
     public async Task does_not_modify_original_office_bytes_or_mtime()
     {
         var docx = TestOfficeFactory.WriteDocx(_docsRoot, "keep.docx", "keep body");

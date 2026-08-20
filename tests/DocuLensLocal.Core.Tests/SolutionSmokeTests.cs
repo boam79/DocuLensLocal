@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.21</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.22</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -73,6 +73,7 @@ public class SolutionSmokeTests
         Assert.Contains("PlanSync", window, StringComparison.Ordinal);
         Assert.Contains("TryWatchSyncAsync", window, StringComparison.Ordinal);
         Assert.Contains("FolderIndexWatch", window, StringComparison.Ordinal);
+        Assert.Contains("_folderWatch.Ping()", window, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -82,6 +83,10 @@ public class SolutionSmokeTests
 
         Assert.Contains("Include=\"Tesseract\"", csproj, StringComparison.Ordinal);
         Assert.Contains("Include=\"HwpLibSharp\"", csproj, StringComparison.Ordinal);
+        var access = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "OfficeFileAccess.cs"));
+        var watch = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "FolderIndexWatch.cs"));
+        Assert.Contains("FileShare.ReadWrite | FileShare.Delete", access, StringComparison.Ordinal);
+        Assert.Contains("Filter = IndexWatchPolicy.FileWatcherFilter", watch, StringComparison.Ordinal);
     }
 
     [Fact]

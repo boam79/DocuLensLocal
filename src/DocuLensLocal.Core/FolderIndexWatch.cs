@@ -29,11 +29,13 @@ public sealed class FolderIndexWatch : IDisposable
         Folder = folder;
         _watcher = new FileSystemWatcher(folder)
         {
+            Filter = IndexWatchPolicy.FileWatcherFilter,
             IncludeSubdirectories = true,
             NotifyFilter = NotifyFilters.FileName
                 | NotifyFilters.DirectoryName
                 | NotifyFilters.LastWrite
-                | NotifyFilters.Size,
+                | NotifyFilters.Size
+                | NotifyFilters.CreationTime,
             InternalBufferSize = 64 * 1024,
         };
         _watcher.Created += OnChanged;
@@ -42,6 +44,8 @@ public sealed class FolderIndexWatch : IDisposable
         _watcher.Renamed += OnRenamed;
         _watcher.EnableRaisingEvents = true;
     }
+
+    public void Ping() => HandlePath(null);
 
     public void HandlePath(string? path)
     {

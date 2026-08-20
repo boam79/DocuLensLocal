@@ -19,7 +19,8 @@ public static class LegacyDocTextExtractor
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            using var root = RootStorage.OpenRead(path);
+            using var file = OfficeFileAccess.OpenRead(path);
+            using var root = RootStorage.Open(file, StorageModeFlags.LeaveOpen);
             if (!root.TryOpenStream("WordDocument", out var stream) || stream is null)
             {
                 return string.Empty;
@@ -58,7 +59,7 @@ public static class LegacyDocTextExtractor
                 return Clean(Encoding.Unicode.GetString(bytes));
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return string.Empty;
         }

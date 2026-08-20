@@ -374,6 +374,29 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 이미 인덱싱한 폴더의 Excel은 **새 파일 인덱싱**(또는 폴더 감시)으로 읽힘. 스캔 그림만 있는 파일은 **처음부터 다시 인덱싱**이 필요할 수 있음.
 - 사용자 확인: 실제 `.xlsx` 견적/계약 본문 검색, 스캔 그림 Excel OCR. 완료 표시는 사용자 확인 후.
 
+## Background and Motivation (2026-08-20 엑셀 추가 시 바로 인덱싱)
+
+사용자: 엑셀 파일을 폴더에 넣으면 바로 새 파일 인덱싱이 되어야 하는데 안 되는 것 같다.
+
+원인: Excel은 저장 시 확장자 없는 임시 파일/`~$` 잠금 파일을 쓴다. 감시 필터가 `*.*`라 임시 파일을 놓치고, `~$`는 무시했다. ZIP은 `FileShare.Read`로 열어서 Excel이 연 파일은 실패 → 빈 본문으로 저장 → 크기·mtime이 같으면 **새 파일 인덱싱**도 다시 안 읽었다.
+
+## High-level Task Breakdown (2026-08-20 엑셀 추가 시 바로 인덱싱)
+
+### Task L — 엑셀을 넣으면 바로 읽기
+
+- 성공 기준: `~$`·`.tmp`·확장자 없는 임시 파일도 감시를 깨운다. xlsx는 Excel이 연 상태에서도 공유 읽기가 된다. 깨진 ZIP은 빈 본문으로 고정하지 않고 다음 패스에서 다시 읽는다. `dotnet test` 통과. 버전 0.1.22.
+
+## Current Status / Progress Tracking (2026-08-20 엑셀 추가 시 바로 인덱싱)
+
+- 모드: **Executor** (엑셀 넣으면 바로 인덱싱 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 127/127. 버전 0.1.22.
+- 감시 필터 `*`, `~$`/`.tmp`도 동기화 시작. ZIP은 `FileShare.ReadWrite`. 깨진 ZIP은 목록에 고정하지 않음.
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 준비. Setup.exe를 `-Wait`로 실행하지 않음.
+
 ## Executor's Feedback or Assistance Requests
 
 - 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 업로드. Setup.exe를 `-Wait`로 실행하지 않음.

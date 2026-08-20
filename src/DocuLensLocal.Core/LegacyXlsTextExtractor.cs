@@ -20,7 +20,8 @@ public static class LegacyXlsTextExtractor
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            using var root = RootStorage.OpenRead(path);
+            using var file = OfficeFileAccess.OpenRead(path);
+            using var root = RootStorage.Open(file, StorageModeFlags.LeaveOpen);
             foreach (var name in new[] { "Workbook", "Book" })
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -43,7 +44,7 @@ public static class LegacyXlsTextExtractor
 
             return string.Empty;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return string.Empty;
         }

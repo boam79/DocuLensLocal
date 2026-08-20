@@ -4,6 +4,20 @@ public static class IndexWatchPolicy
 {
     public static readonly TimeSpan Debounce = TimeSpan.FromSeconds(3);
 
+    /// <summary>
+    /// Watch every file, including Excel temps with no extension. The default
+    /// FileSystemWatcher filter <c>*.*</c> misses those save-as files.
+    /// </summary>
+    public const string FileWatcherFilter = "*";
+
+    private static readonly string[] StagingExtensions =
+    [
+        ".tmp",
+        ".crdownload",
+        ".partial",
+        ".download",
+    ];
+
     public static bool ShouldWatchFolder(AppSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -24,8 +38,14 @@ public static class IndexWatchPolicy
             return true;
         }
 
+        var name = Path.GetFileName(path);
+        if (name.StartsWith("~$", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
         var ext = Path.GetExtension(path);
-        if (string.IsNullOrEmpty(ext))
+        if (string.IsNullOrEmpty(ext) || StagingExtensions.Any(item => ext.Equals(item, StringComparison.OrdinalIgnoreCase)))
         {
             return true;
         }

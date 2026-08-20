@@ -15,7 +15,7 @@ public static class ZipOfficeTextExtractor
 
         try
         {
-            using var zip = ZipFile.OpenRead(path);
+            using var zip = OfficeFileAccess.OpenZip(path);
             var parts = new List<string>();
             foreach (var entry in zip.Entries)
             {
@@ -31,7 +31,7 @@ public static class ZipOfficeTextExtractor
 
             return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part))).Trim();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return string.Empty;
         }

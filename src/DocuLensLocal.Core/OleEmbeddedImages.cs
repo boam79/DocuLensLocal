@@ -14,12 +14,13 @@ public static class OleEmbeddedImages
 
         try
         {
-            using var root = RootStorage.OpenRead(path);
+            using var stream = OfficeFileAccess.OpenRead(path);
+            using var root = RootStorage.Open(stream, StorageModeFlags.LeaveOpen);
             var images = new List<byte[]>();
             Collect(root, images, cancellationToken);
             return images;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return [];
         }

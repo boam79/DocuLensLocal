@@ -19,7 +19,7 @@ public static class ZipOfficeMedia
 
         try
         {
-            using var zip = ZipFile.OpenRead(path);
+            using var zip = OfficeFileAccess.OpenZip(path);
             var images = new List<byte[]>();
             foreach (var entry in zip.Entries)
             {
@@ -45,7 +45,7 @@ public static class ZipOfficeMedia
 
             return images;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return [];
         }

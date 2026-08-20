@@ -12,10 +12,13 @@ public class IndexWatchPolicyTests
         Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/스캔.hwp"));
         Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/견적.xlsx"));
         Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/legacy.xls"));
+        Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/~$잠금.xlsx"));
+        Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/C7A31F00.tmp"));
+        Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/C7A31F00"));
         Assert.True(IndexWatchPolicy.ShouldWatchPath(null));
         Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/메모.txt"));
-        Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/~$잠금.docx"));
-        Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/~$잠금.xlsx"));
+        Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/image.png"));
+        Assert.Equal("*", IndexWatchPolicy.FileWatcherFilter);
     }
 
     [Fact]
@@ -76,14 +79,19 @@ public class DebouncedActionTests
         using var watch = new FolderIndexWatch(TimeSpan.FromMilliseconds(40), () => Interlocked.Increment(ref pings));
 
         watch.HandlePath("/docs/메모.txt");
-        watch.HandlePath("/docs/~$잠금.docx");
+        watch.HandlePath("/docs/image.png");
         await Task.Delay(120);
 
         Assert.Equal(0, pings);
 
-        watch.HandlePath("/docs/추가.pdf");
+        watch.HandlePath("/docs/~$잠금.xlsx");
         await Task.Delay(120);
 
         Assert.Equal(1, pings);
+
+        watch.HandlePath("/docs/추가.xlsx");
+        await Task.Delay(120);
+
+        Assert.Equal(2, pings);
     }
 }

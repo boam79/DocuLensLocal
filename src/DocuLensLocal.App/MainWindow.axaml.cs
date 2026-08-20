@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private bool _searchSubmitted;
     private bool _resumeIndexingAfterUpdate;
     private bool _pendingWatchSync;
+    private int _watchRetryCount;
     private readonly FolderIndexWatch _folderWatch;
 
     public MainWindow()
@@ -886,10 +887,19 @@ public partial class MainWindow : Window
         var plan = _indexing.PlanSync(folder);
         if (!plan.NeedsWork)
         {
+            _watchRetryCount = 0;
             return;
         }
 
         await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…", preserveSearch: true).ConfigureAwait(true);
+        if (_indexing.PlanSync(folder).NeedsWork && _watchRetryCount < 3)
+        {
+            _watchRetryCount++;
+            _folderWatch.Ping();
+            return;
+        }
+
+        _watchRetryCount = 0;
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)

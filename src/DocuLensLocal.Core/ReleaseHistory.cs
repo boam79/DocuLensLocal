@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.22", "엑셀 넣으면 바로 인덱싱"),
         new("0.1.21", "Excel 본문 검색·OCR"),
         new("0.1.20", "폴더에 넣으면 자동 인덱싱"),
         new("0.1.19", "추가된 파일만 인덱싱"),

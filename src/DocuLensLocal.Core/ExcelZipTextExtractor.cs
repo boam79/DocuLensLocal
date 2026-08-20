@@ -15,7 +15,7 @@ public static class ExcelZipTextExtractor
 
         try
         {
-            using var zip = ZipFile.OpenRead(path);
+            using var zip = OfficeFileAccess.OpenZip(path);
             var shared = ReadSharedStrings(zip, cancellationToken);
             var parts = new List<string>(shared);
             foreach (var entry in zip.Entries)
@@ -39,7 +39,7 @@ public static class ExcelZipTextExtractor
 
             return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part))).Trim();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !OfficeFileAccess.IsTransient(ex))
         {
             return string.Empty;
         }
