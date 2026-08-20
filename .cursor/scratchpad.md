@@ -252,6 +252,15 @@
 
 - 성공 기준: IdleHintPanel에 「문서」 한 칸 대신 PDF / WORD / HWP 세 칸. 안내 문구에 지원 형식이 보임. `dotnet test` 통과. 버전 0.1.17.
 
+## Current Status / Progress Tracking (2026-08-20 업데이트 후 인덱싱 이어서)
+
+- 모드: **Executor** (업데이트 후 인덱싱 이어서 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 인덱싱 시작 시 `IndexingInProgress` 저장. 업데이트 확인 시 인덱싱을 멈추고, 다시 켜면 `Start`로 남은 파일부터 이어서 읽음(이미 본문이 있는 파일은 건너뜀).
+- `dotnet test` 105/105. 버전 0.1.18.
+- **v0.1.18 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.18/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 인덱싱 중 업데이트 → 다시 켠 뒤 남은 파일부터 이어지는지. 완료 표시는 사용자 확인 후.
+
 ## Current Status / Progress Tracking (2026-08-20 검색 화면 파일 형식)
 
 - 모드: **Executor** (검색 화면 PDF·WORD·HWP — 사용자 확인 전 완료 표시 금지)
@@ -264,6 +273,7 @@
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-20 (0.1.18 Executor): 인덱싱 중 업데이트하면 다시 시작 후 **남은 파일부터 이어서** 읽음. 설치본 v0.1.18 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.17 Executor): 검색 빈 화면 가운데 「문서」를 **PDF / WORD / HWP** 세 칸으로 바꿈. 설치본 v0.1.17 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.15 Executor): 검색 화면에 **처음부터 다시 인덱싱**을 넣음. 검색창 **초기화**는 검색어만 지움(기존). 인덱스 초기화는 원본 문서를 건드리지 않음.
 
