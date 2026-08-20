@@ -244,6 +244,22 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task concatenated_bus_ad_query_matches_split_filenames()
+    {
+        WriteStubPdf(_pdfRoot, "버스일정.pdf");
+        WriteStubPdf(_pdfRoot, "광고견적.pdf");
+        WriteStubPdf(_pdfRoot, "NDA.pdf");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_pdfRoot);
+
+        var hits = service.SearchByFileName("버스광고 찾아줘");
+        Assert.Equal(2, hits.Count);
+        Assert.Contains(hits, h => h.FilePath.Contains("버스일정.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(hits, h => h.FilePath.Contains("광고견적.pdf", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void default_constructor_uses_apppaths_userdata()
     {
         var service = new IndexingService();

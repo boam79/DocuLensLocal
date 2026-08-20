@@ -38,3 +38,9 @@ public sealed class IndexedDocument
     /// <summary>filename_only, indexed, or ocr — metadata is always stored.</summary>
     public string Status { get; init; } = "indexed";
 }
+
+public sealed record IndexCoverage(
+    int DocumentCount,
+    int BodyCount,
+    int OcrPageCount,
+    bool OcrEngineAvailable);

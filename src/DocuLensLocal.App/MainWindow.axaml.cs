@@ -288,7 +288,7 @@ public partial class MainWindow : Window
             }).ToList();
         }
 
-        IndexedSummaryText.Text = $"인덱싱 완료 · {all.Count}건 · 파일명+본문";
+        IndexedSummaryText.Text = FormatCoverage(all);
         SearchResultsList.ItemsSource = rows;
 
         if (rows.Count > 0)
@@ -297,10 +297,29 @@ public partial class MainWindow : Window
             return;
         }
 
-        SearchEmptyText.Text = all.Count == 0
-            ? "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다."
-            : "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";
+        var coverage = _indexing.GetCoverage();
+        if (all.Count == 0)
+        {
+            SearchEmptyText.Text = "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다.";
+        }
+        else if (coverage.BodyCount == 0)
+        {
+            SearchEmptyText.Text = "파일명에 그 단어가 없습니다. 본문·OCR 검색은 「폴더 변경 / 다시 인덱싱」을 한 번 더 해야 합니다.";
+        }
+        else
+        {
+            SearchEmptyText.Text = "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";
+        }
+
         SearchEmptyText.IsVisible = true;
+    }
+
+    private static string FormatCoverage(IReadOnlyList<IndexedDocument> all)
+    {
+        var body = all.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText));
+        var ocrPages = all.Sum(doc => doc.OcrPageCount);
+        var ocr = TesseractCliOcrEngine.IsOnPath ? $"OCR {ocrPages}쪽" : "OCR 엔진 없음";
+        return $"인덱싱 완료 · {all.Count}건 · 본문 {body}건 · {ocr}";
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)

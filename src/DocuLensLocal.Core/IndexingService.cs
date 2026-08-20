@@ -115,6 +115,16 @@ public sealed class IndexingService
         return store.Search(query);
     }
 
+    public IndexCoverage GetCoverage()
+    {
+        var documents = GetIndexedDocuments();
+        return new IndexCoverage(
+            documents.Count,
+            documents.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText)),
+            documents.Sum(doc => doc.OcrPageCount),
+            TesseractCliOcrEngine.IsOnPath);
+    }
+
     private static IEnumerable<string> DiscoverPdfs(string folderPath) =>
         Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
             .Where(path => path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))

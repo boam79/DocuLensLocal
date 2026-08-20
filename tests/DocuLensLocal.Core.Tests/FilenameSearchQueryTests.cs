@@ -13,11 +13,10 @@ public class FilenameSearchQueryTests
     }
 
     [Fact]
-    public void strips_trailing_verb_glued_to_last_token()
+    public void splits_concatenated_hangul_the_same_as_spaced_query()
     {
-        var tokens = FilenameSearchQuery.ExtractTokens("버스광고찾아줘");
-
-        Assert.Equal(["버스광고"], tokens.ToArray());
+        Assert.Equal(["버스", "광고"], FilenameSearchQuery.ExtractTokens("버스광고 찾아줘").ToArray());
+        Assert.Equal(["버스", "광고"], FilenameSearchQuery.ExtractTokens("버스광고찾아줘").ToArray());
     }
 
     [Fact]

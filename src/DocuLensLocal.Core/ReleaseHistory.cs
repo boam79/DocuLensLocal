@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.9", "버스광고 붙여 검색"),
         new("0.1.8", "버튼·목록 글자 표시"),
         new("0.1.7", "본문 검색·OCR·근거 문장"),
         new("0.1.6", "Mac에서 개발·실행"),

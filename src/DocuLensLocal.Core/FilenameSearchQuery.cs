@@ -1,9 +1,9 @@
 namespace DocuLensLocal.Core;
 
 /// <summary>
-/// Turns a typed search box string into filename tokens.
-/// Korean fillers/trailing verbs are dropped so "버스 광고 찾아줘" becomes 버스 + 광고.
-/// Document text is never sent off the PC.
+/// Turns a typed search box string into filename/body tokens.
+/// Korean fillers/trailing verbs are dropped so "버스 광고 찾아줘" and "버스광고 찾아줘"
+/// both become 버스 + 광고. Document text is never sent off the PC.
 /// </summary>
 public static class FilenameSearchQuery
 {
@@ -52,9 +52,17 @@ public static class FilenameSearchQuery
                 continue;
             }
 
-            if (seen.Add(token))
+            foreach (var piece in ExpandHangulCompound(token))
             {
-                tokens.Add(token);
+                if (Fillers.Contains(piece))
+                {
+                    continue;
+                }
+
+                if (seen.Add(piece))
+                {
+                    tokens.Add(piece);
+                }
             }
         }
 
@@ -73,4 +81,29 @@ public static class FilenameSearchQuery
 
         return token;
     }
+
+    /// <summary>
+    /// "버스광고" (typed without a space) must become 버스 + 광고, same as the spaced query.
+    /// </summary>
+    internal static IReadOnlyList<string> ExpandHangulCompound(string token)
+    {
+        if (token.Length < 4 || !token.All(IsHangulSyllable))
+        {
+            return [token];
+        }
+
+        var chunks = new List<string>();
+        var index = 0;
+        while (index < token.Length)
+        {
+            var remaining = token.Length - index;
+            var take = remaining == 3 ? 3 : 2;
+            chunks.Add(token.Substring(index, take));
+            index += take;
+        }
+
+        return chunks.Count >= 2 ? chunks : [token];
+    }
+
+    private static bool IsHangulSyllable(char value) => value is >= '\uAC00' and <= '\uD7A3';
 }

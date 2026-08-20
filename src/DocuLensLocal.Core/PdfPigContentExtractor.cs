@@ -1,4 +1,5 @@
 using UglyToad.PdfPig;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 
 namespace DocuLensLocal.Core;
 
@@ -36,11 +37,11 @@ public sealed class PdfPigContentExtractor : IPdfContentExtractor
             foreach (var page in document.GetPages())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var digital = page.Text?.Trim() ?? string.Empty;
+                var digital = ReadDigitalText(page);
                 var ocrText = string.Empty;
                 var letterCount = page.Letters.Count;
-                var hasImages = page.GetImages().Any();
-                if (letterCount < SparseTextLetterThreshold && hasImages && _ocr.IsAvailable)
+                // Scan PDFs often hide images in XObjects, so OCR any sparse page when an engine exists.
+                if (letterCount < SparseTextLetterThreshold && _ocr.IsAvailable)
                 {
                     try
                     {
@@ -67,5 +68,28 @@ public sealed class PdfPigContentExtractor : IPdfContentExtractor
         {
             return PdfExtractedContent.Empty;
         }
+    }
+
+    private static string ReadDigitalText(UglyToad.PdfPig.Content.Page page)
+    {
+        try
+        {
+            var ordered = ContentOrderTextExtractor.GetText(page);
+            if (!string.IsNullOrWhiteSpace(ordered))
+            {
+                return ordered.Trim();
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        if (!string.IsNullOrWhiteSpace(page.Text))
+        {
+            return page.Text.Trim();
+        }
+
+        var words = page.GetWords().Select(word => word.Text).Where(text => !string.IsNullOrWhiteSpace(text));
+        return string.Join(" ", words).Trim();
     }
 }

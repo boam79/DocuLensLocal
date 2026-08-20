@@ -157,12 +157,12 @@ public class PdfPigExtractorOcrBranchTests
         var raster = new FixedRasterizer(TestPdfFactory.RenderOpaquePng("x"));
         var extractor = new PdfPigContentExtractor(ocr, raster);
         var dir = Path.Combine(Path.GetTempPath(), "DocuLensOcrBranch", Guid.NewGuid().ToString("N"));
-        var pdf = TestPdfFactory.WriteDigitalPdf(dir, "letters.pdf", "Hi");
+            var pdf = TestPdfFactory.WriteDigitalPdf(dir, "letters.pdf", "This memorandum of understanding contains enough digital letters to skip OCR.");
 
         try
         {
             var extracted = extractor.Extract(pdf);
-            Assert.Contains("Hi", extracted.BodyText, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("memorandum", extracted.BodyText, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(0, extracted.OcrPageCount);
             Assert.False(ocr.Called);
         }
