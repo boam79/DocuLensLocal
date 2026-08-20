@@ -186,6 +186,7 @@
 - 예전 인덱스(본문 0건)는 안내 문구만으로 해결되지 않는다. 저장된 `IndexFolder`가 있으면 시작 시 자동 재인덱싱해야 한다.
 - charlesw Tesseract 5.2.0 native 파일 이름은 `tesseract41.dll`이 아니라 `tesseract50.dll`이다.
 - OCR 속도: 페이지마다 `new TesseractEngine` 하지 말 것. `kor+eng` 동시 로드는 한국어만보다 훨씬 느리다. 회색조 120dpi + JPEG면 검색용으로 충분하다.
+- 엑셀·HWP가 「인덱싱 안 됨」이면 먼저 검색 화면 오른쪽 아래 **실제 폴더 경로**를 본다. 파일은 `인수인계`에 있고 인덱스는 `인수인계\계약서_스캔`이면 상위 폴더 파일은 안 읽힌다. 하위만 재귀한다.
 
 ## Background and Motivation (2026-08-20 Word·HWP)
 
@@ -396,7 +397,7 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 ## Executor's Feedback or Assistance Requests
 
-- 2026-08-20 (0.1.23 Executor): 빈 본문 엑셀·한글은 증분 인덱싱에서 다시 읽음. HWP 공유 열기. 설치본 v0.1.23 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (Planner): 사용자 「확인완료」. 인덱싱 대상 폴더가 `계약서_스캔`이라 상위 `인수인계`의 xlsx/hwp는 범위 밖이었음.
 - 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 
 ## Background and Motivation (2026-08-20 엑셀·HWP 인덱싱 재확인)
@@ -417,6 +418,7 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - `dotnet test` 131/131. 버전 0.1.23.
 - **v0.1.23 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.23/DocuLensLocal-win-Setup.exe
+- **Planner 2026-08-20:** 사용자 확인 완료. 엑셀·한글이 안 읽히던 직접 원인은 선택한 폴더가 `인수인계\계약서_스캔`이고, 파일은 상위 `인수인계`에 있었음. 폴더 변경으로 해결.
 
 
 ## Executor's Feedback or Assistance Requests
