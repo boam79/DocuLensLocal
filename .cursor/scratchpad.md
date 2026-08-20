@@ -130,7 +130,8 @@
 - 원인: 예전 파일명-only `index.db`를 그대로 씀. Windows에 Tesseract가 PATH에 없어 OCR 배지까지 꺼짐.
 - 이번 슬라이스: 설치본에 Tesseract native + tessdata(kor/eng) 포함. 본문 0건이면 저장된 폴더를 자동 재인덱스. 버전 0.1.10.
 - `dotnet test` 63/63 (Linux 클라우드).
-- 다음: 팩·GitHub Release v0.1.10 업로드 후 사용자에게 정보 탭 **업데이트** 요청.
+- **v0.1.10 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.10/DocuLensLocal-win-Setup.exe
+- Planner/사용자: 정보 탭 **업데이트** 후 앱을 다시 켜면 본문을 자동으로 읽는지, `부대` 검색이 되는지 확인 요청. 완료 표시는 사용자 확인 후.
 
 ---
 
