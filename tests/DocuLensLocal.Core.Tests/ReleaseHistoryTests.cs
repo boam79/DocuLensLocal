@@ -5,16 +5,17 @@ namespace DocuLensLocal.Core.Tests;
 public class ReleaseHistoryTests
 {
     [Fact]
-    public void known_releases_cover_0_1_0_through_0_1_17_newest_first()
+    public void known_releases_cover_0_1_0_through_0_1_18_newest_first()
     {
         var versions = ReleaseHistory.Known.Select(note => note.Version).ToArray();
 
-        Assert.Equal(["0.1.17", "0.1.16", "0.1.15", "0.1.14", "0.1.13", "0.1.12", "0.1.11", "0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1", "0.1.0"], versions);
+        Assert.Equal(["0.1.18", "0.1.17", "0.1.16", "0.1.15", "0.1.14", "0.1.13", "0.1.12", "0.1.11", "0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1", "0.1.0"], versions);
     }
 
     [Fact]
     public void known_releases_keep_short_korean_notes()
     {
+        Assert.Equal("업데이트 후 인덱싱 이어서", Note("0.1.18").SummaryKo);
         Assert.Equal("검색 화면에 PDF·WORD·HWP 표시", Note("0.1.17").SummaryKo);
         Assert.Equal("Word·HWP 스캔 OCR·업데이트 안내", Note("0.1.16").SummaryKo);
         Assert.Equal("인덱스 초기화·재인덱싱", Note("0.1.15").SummaryKo);
@@ -38,8 +39,10 @@ public class ReleaseHistoryTests
     [Fact]
     public void format_notes_lists_versions_after_the_previous_one()
     {
-        var text = ReleaseHistory.FormatNotes("0.1.14", "0.1.17");
+        var text = ReleaseHistory.FormatNotes("0.1.14", "0.1.18");
 
+        Assert.Contains("0.1.18", text, StringComparison.Ordinal);
+        Assert.Contains("업데이트 후 인덱싱 이어서", text, StringComparison.Ordinal);
         Assert.Contains("0.1.17", text, StringComparison.Ordinal);
         Assert.Contains("검색 화면에 PDF·WORD·HWP 표시", text, StringComparison.Ordinal);
         Assert.Contains("0.1.16", text, StringComparison.Ordinal);

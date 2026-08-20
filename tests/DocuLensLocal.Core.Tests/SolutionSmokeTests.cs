@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.17</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.18</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -55,6 +55,18 @@ public class SolutionSmokeTests
         Assert.Contains("x:Name=\"SecondaryButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"확인\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"나중에\"", axaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void indexing_resume_after_update_is_wired_in_the_app()
+    {
+        var window = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.App", "MainWindow.axaml.cs"));
+        var settings = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "AppSettings.cs"));
+
+        Assert.Contains("IndexingInProgress", settings, StringComparison.Ordinal);
+        Assert.Contains("IndexResumePolicy.ShouldResume", window, StringComparison.Ordinal);
+        Assert.Contains("CancelIndexingForUpdate", window, StringComparison.Ordinal);
+        Assert.Contains("IndexingWouldResume", window, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -85,6 +85,8 @@ public class AppUpdaterTests
     {
         Assert.Equal("업데이트가 있습니다", UpdatePromptCopy.AvailableTitle);
         Assert.Contains("확인을 누르면", UpdatePromptCopy.AvailableBody("0.1.16"), StringComparison.Ordinal);
+        Assert.DoesNotContain("이어서", UpdatePromptCopy.AvailableBody("0.1.16"), StringComparison.Ordinal);
+        Assert.Contains("이어서", UpdatePromptCopy.AvailableBody("0.1.16", indexingNow: true), StringComparison.Ordinal);
         Assert.Equal("업데이트 내역", UpdatePromptCopy.NotesTitle);
     }
 

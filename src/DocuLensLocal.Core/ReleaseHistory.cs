@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.18", "업데이트 후 인덱싱 이어서"),
         new("0.1.17", "검색 화면에 PDF·WORD·HWP 표시"),
         new("0.1.16", "Word·HWP 스캔 OCR·업데이트 안내"),
         new("0.1.15", "인덱스 초기화·재인덱싱"),

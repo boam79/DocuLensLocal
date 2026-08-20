@@ -161,6 +161,41 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task start_after_cancel_skips_files_already_extracted_and_finishes_the_rest()
+    {
+        for (var i = 0; i < 8; i++)
+        {
+            WriteStubPdf(_pdfRoot, $"file-{i}.pdf");
+        }
+
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        using var cts = new CancellationTokenSource();
+        var progress = new SynchronousProgress<IndexingProgress>(p =>
+        {
+            if (p.ProcessedCount >= 2)
+            {
+                cts.Cancel();
+            }
+        });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => service.Start(_pdfRoot, progress, cts.Token));
+
+        var storedAfterCancel = service.GetIndexedDocuments().Count;
+        Assert.InRange(storedAfterCancel, 2, 7);
+        Assert.Equal(storedAfterCancel, extractor.Calls);
+
+        var result = await service.Start(_pdfRoot);
+
+        Assert.True(result.IsCompleted);
+        Assert.Equal(8, result.FoundCount);
+        Assert.Equal(8, service.GetIndexedDocuments().Count);
+        Assert.Equal(8, extractor.Calls);
+        Assert.All(service.GetIndexedDocuments(), doc => Assert.Equal("본문 계약 조항", doc.BodyText));
+    }
+
+    [Fact]
     public async Task empty_folder_completes_with_zero_documents()
     {
         var service = new IndexingService(_userData);

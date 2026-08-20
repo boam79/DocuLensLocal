@@ -78,6 +78,16 @@ public class SearchStatusFormatterTests
     }
 
     [Fact]
+    public void resume_progress_says_indexing_continues()
+    {
+        var text = SearchStatusFormatter.ResumeProgress(40, 276);
+
+        Assert.Contains("이어서", text, StringComparison.Ordinal);
+        Assert.Contains("40", text, StringComparison.Ordinal);
+        Assert.Contains("276", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void empty_results_tell_the_user_body_is_being_read()
     {
         var text = SearchStatusFormatter.EmptyResults(documentCount: 276, bodyCount: 0, indexingNow: true);

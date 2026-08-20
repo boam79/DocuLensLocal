@@ -13,6 +13,9 @@ public static class SearchStatusFormatter
     public static string CoverageProgress(int processedCount, int foundCount) =>
         $"본문 읽는 중 · {processedCount} / {foundCount}";
 
+    public static string ResumeProgress(int processedCount, int foundCount) =>
+        $"이어서 읽는 중 · {processedCount} / {foundCount}";
+
     public static string EmptyResults(int documentCount, int bodyCount, bool indexingNow)
     {
         if (documentCount == 0)

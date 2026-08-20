@@ -23,4 +23,7 @@ public sealed class AppSettings
     public string? PendingUpdateVersion { get; set; }
 
     public string? PendingUpdateNotes { get; set; }
+
+    /// <summary>True while Start/Rebuild is running, so an update restart can continue leftover files.</summary>
+    public bool IndexingInProgress { get; set; }
 }

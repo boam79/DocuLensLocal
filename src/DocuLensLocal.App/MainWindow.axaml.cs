@@ -14,9 +14,12 @@ public partial class MainWindow : Window
     private readonly IndexingService _indexing = new();
     private readonly AppUpdater _updater = new();
     private readonly IUpdateFeed _updateFeed;
+    private CancellationTokenSource? _indexCts;
+    private Task? _indexingTask;
     private bool _isIndexing;
     private bool _showMainSearch;
     private bool _searchSubmitted;
+    private bool _resumeIndexingAfterUpdate;
 
     public MainWindow()
         : this(new VelopackUpdateFeed())
@@ -39,7 +42,7 @@ public partial class MainWindow : Window
         {
             await TryShowPendingUpdateNotesAsync().ConfigureAwait(true);
             await TryPromptForUpdateAsync().ConfigureAwait(true);
-            await TryPrepareOcrAndBackfillAsync().ConfigureAwait(true);
+            await TryResumeOrBackfillIndexingAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -70,7 +73,7 @@ public partial class MainWindow : Window
             var confirm = await MessageDialog.ConfirmAsync(
                 this,
                 UpdatePromptCopy.AvailableTitle,
-                result.MessageKo).ConfigureAwait(true);
+                UpdatePromptCopy.AvailableBody(result.NewerVersion, IndexingWouldResume())).ConfigureAwait(true);
             if (!confirm)
             {
                 return;
@@ -88,7 +91,25 @@ public partial class MainWindow : Window
 
     private async Task ApplyConfirmedUpdateAsync(string version)
     {
+        CancelIndexingForUpdate();
+        var running = _indexingTask;
+        if (running is not null)
+        {
+            try
+            {
+                await running.ConfigureAwait(true);
+            }
+            catch (Exception)
+            {
+                // Indexing stopped so the update can replace files. Resume after restart.
+            }
+        }
+
         var settings = LoadSettings();
+        if (_resumeIndexingAfterUpdate || settings.IndexingInProgress)
+        {
+            IndexingRunState.OnStarted(settings);
+        }
         settings.PendingUpdateVersion = version;
         settings.PendingUpdateNotes = ReleaseHistory.FormatNotes(CurrentDisplayVersion(), version);
         SaveSettings(settings);
@@ -100,7 +121,30 @@ public partial class MainWindow : Window
             settings.PendingUpdateVersion = null;
             SaveSettings(settings);
             await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, applied.MessageKo).ConfigureAwait(true);
+            if (!_isIndexing && IndexResumePolicy.ShouldResume(LoadSettings()))
+            {
+                await TryResumeOrBackfillIndexingAsync().ConfigureAwait(true);
+            }
         }
+    }
+
+    private bool IndexingWouldResume()
+    {
+        var settings = LoadSettings();
+        return _isIndexing || _resumeIndexingAfterUpdate || IndexResumePolicy.ShouldResume(settings);
+    }
+
+    private void CancelIndexingForUpdate()
+    {
+        if (_isIndexing)
+        {
+            _resumeIndexingAfterUpdate = true;
+            var settings = LoadSettings();
+            IndexingRunState.OnStarted(settings);
+            SaveSettings(settings);
+        }
+
+        _indexCts?.Cancel();
     }
 
     private static string CurrentDisplayVersion()
@@ -268,14 +312,24 @@ public partial class MainWindow : Window
         IndexStatusText.Text = "인덱싱 중…";
         IndexCountText.Text = "건수: 0 / —";
         IndexCurrentFileText.Text = "현재 파일: —";
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
 
         var progress = new Progress<IndexingProgress>(ShowProgress);
 
         try
         {
             await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
-            var result = await _indexing.Start(folder, progress, CancellationToken.None).ConfigureAwait(true);
+            var indexing = _indexing.Start(folder, progress, IndexingToken());
+            _indexingTask = indexing;
+            var result = await indexing.ConfigureAwait(true);
             ShowResult(result);
+        }
+        catch (OperationCanceledException)
+        {
+            IndexStatusText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "인덱싱을 잠시 멈췄습니다. 다시 켜면 남은 파일부터 이어서 읽습니다.";
         }
         catch (Exception ex)
         {
@@ -283,6 +337,7 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
         }
@@ -309,7 +364,7 @@ public partial class MainWindow : Window
         }
 
         var settings = LoadSettings();
-        settings.IndexCompleted = true;
+        IndexingRunState.OnFinished(settings, completed: true);
         SaveSettings(settings);
         _showMainSearch = true;
         SearchTab.IsChecked = true;
@@ -379,6 +434,8 @@ public partial class MainWindow : Window
         ApplySearchListMode(SearchListMode.Idle);
         IndexedSummaryText.Text = "검색 목록을 지우고 다시 읽는 중…";
         IdleHintText.Text = "원본 파일은 그대로 두고, 이 앱의 검색 목록만 다시 만듭니다.";
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
 
         var progress = new Progress<IndexingProgress>(snapshot =>
         {
@@ -390,9 +447,11 @@ public partial class MainWindow : Window
         try
         {
             await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
-            var result = await _indexing.Rebuild(folder, progress, CancellationToken.None).ConfigureAwait(true);
+            var indexing = _indexing.Rebuild(folder, progress, IndexingToken());
+            _indexingTask = indexing;
+            var result = await indexing.ConfigureAwait(true);
             var settings = LoadSettings();
-            settings.IndexCompleted = result.IsCompleted;
+            IndexingRunState.OnFinished(settings, completed: result.IsCompleted);
             SaveSettings(settings);
             _showMainSearch = true;
             if (SearchTab.IsChecked == true)
@@ -400,12 +459,19 @@ public partial class MainWindow : Window
                 ShowMainSearch(resetSearch: true);
             }
         }
+        catch (OperationCanceledException)
+        {
+            IndexedSummaryText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "다시 인덱싱을 잠시 멈췄습니다. 다시 켜면 이어서 읽습니다.";
+        }
         catch (Exception ex)
         {
             IndexedSummaryText.Text = $"다시 인덱싱하지 못했습니다: {ex.Message}";
         }
         finally
         {
+            _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
         }
@@ -425,7 +491,7 @@ public partial class MainWindow : Window
                 var confirm = await MessageDialog.ConfirmAsync(
                     this,
                     UpdatePromptCopy.AvailableTitle,
-                    result.MessageKo).ConfigureAwait(true);
+                    UpdatePromptCopy.AvailableBody(result.NewerVersion, IndexingWouldResume())).ConfigureAwait(true);
                 if (!confirm)
                 {
                     UpdateStatusText.Text = "업데이트를 나중에 설치할 수 있습니다.";
@@ -517,7 +583,7 @@ public partial class MainWindow : Window
             all.Sum(doc => doc.OcrPageCount),
             CompositeOcrEngine.CreateDefault().IsAvailable);
 
-    private async Task TryPrepareOcrAndBackfillAsync()
+    private async Task TryResumeOrBackfillIndexingAsync()
     {
         try
         {
@@ -534,8 +600,16 @@ public partial class MainWindow : Window
         }
 
         var settings = LoadSettings();
-        if (!IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), settings.IndexFolder))
+        var resume = IndexResumePolicy.ShouldResume(settings);
+        var backfill = IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), settings.IndexFolder);
+        if (!resume && !backfill)
         {
+            if (settings.IndexingInProgress)
+            {
+                settings.IndexingInProgress = false;
+                SaveSettings(settings);
+            }
+
             if (SearchPanel.IsVisible)
             {
                 if (_searchSubmitted)
@@ -554,7 +628,10 @@ public partial class MainWindow : Window
         var folder = settings.IndexFolder!;
         _isIndexing = true;
         UpdateIndexButtonState();
-        IndexedSummaryText.Text = "본문 읽는 중…";
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
+        IndexedSummaryText.Text = resume ? "이어서 읽는 중…" : "본문 읽는 중…";
+        IndexStatusText.Text = resume ? "업데이트가 끝난 뒤 인덱싱을 이어서 합니다." : "인덱싱 중…";
         if (SearchPanel.IsVisible && _searchSubmitted)
         {
             RunSearch();
@@ -567,17 +644,27 @@ public partial class MainWindow : Window
 
         var progress = new Progress<IndexingProgress>(snapshot =>
         {
-            IndexedSummaryText.Text = SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount);
+            IndexedSummaryText.Text = resume
+                ? SearchStatusFormatter.ResumeProgress(snapshot.ProcessedCount, snapshot.FoundCount)
+                : SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount);
             IndexCountText.Text = $"건수: {snapshot.ProcessedCount} / {snapshot.FoundCount}";
             IndexCurrentFileText.Text = string.IsNullOrWhiteSpace(snapshot.CurrentFile)
                 ? "현재 파일: —"
                 : $"현재 파일: {Path.GetFileName(snapshot.CurrentFile)}";
+            IndexStatusText.Text = snapshot.IsCompleted
+                ? FormatCompleteStatus(snapshot.Errors.Count)
+                : resume
+                    ? "이어서 읽는 중…"
+                    : string.IsNullOrWhiteSpace(snapshot.PhaseKo) ? "인덱싱 중…" : snapshot.PhaseKo;
         });
 
         try
         {
-            await _indexing.Start(folder, progress, CancellationToken.None).ConfigureAwait(true);
-            settings.IndexCompleted = true;
+            var indexing = _indexing.Start(folder, progress, IndexingToken());
+            _indexingTask = indexing;
+            await indexing.ConfigureAwait(true);
+            settings = LoadSettings();
+            IndexingRunState.OnFinished(settings, completed: true);
             SaveSettings(settings);
             _showMainSearch = true;
             if (SearchTab.IsChecked == true)
@@ -585,15 +672,37 @@ public partial class MainWindow : Window
                 ShowMainSearch(resetSearch: false);
             }
         }
+        catch (OperationCanceledException)
+        {
+            IndexedSummaryText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "인덱싱을 잠시 멈췄습니다.";
+        }
         catch (Exception ex)
         {
             IndexedSummaryText.Text = $"본문을 읽지 못했습니다: {ex.Message}";
         }
         finally
         {
+            _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
         }
+    }
+
+    private void BeginIndexingCancellation()
+    {
+        _indexCts?.Dispose();
+        _indexCts = new CancellationTokenSource();
+    }
+
+    private CancellationToken IndexingToken() => _indexCts?.Token ?? CancellationToken.None;
+
+    private void MarkIndexingStarted()
+    {
+        var settings = LoadSettings();
+        IndexingRunState.OnStarted(settings);
+        SaveSettings(settings);
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)
