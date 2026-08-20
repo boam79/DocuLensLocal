@@ -256,6 +256,17 @@ public partial class MainWindow : Window
         SearchQueryBox.Focus();
     }
 
+    private void ExampleChip_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not string query || string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+
+        SearchQueryBox.Text = query;
+        RunSearch();
+    }
+
     private void SearchQueryBox_OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -296,9 +307,19 @@ public partial class MainWindow : Window
     private void ShowIdleSearch()
     {
         var all = _indexing.GetIndexedDocuments();
-        IndexedSummaryText.Text = FormatCoverage(all);
+        var coverage = CoverageOf(all);
+        IndexedSummaryText.Text = SearchStatusFormatter.Coverage(coverage);
+        IdleHintText.Text = SearchIdleCopy.Hint(coverage);
+        IndexedFolderText.Text = LoadSettings().IndexFolder ?? string.Empty;
         SearchResultsList.ItemsSource = null;
-        SearchEmptyText.IsVisible = false;
+        ApplySearchListMode(SearchListMode.Idle);
+    }
+
+    private void ApplySearchListMode(SearchListMode mode)
+    {
+        IdleHintPanel.IsVisible = mode == SearchListMode.Idle;
+        SearchResultsList.IsVisible = mode == SearchListMode.Hits;
+        EmptyHintPanel.IsVisible = mode == SearchListMode.Empty;
     }
 
     private void RunSearch()
@@ -322,29 +343,30 @@ public partial class MainWindow : Window
         }).ToList();
 
         IndexedSummaryText.Text = FormatCoverage(all);
+        IndexedFolderText.Text = LoadSettings().IndexFolder ?? string.Empty;
         SearchResultsList.ItemsSource = rows;
 
         var mode = SearchListModeResolver.Resolve(query, _searchSubmitted, rows.Count);
         if (mode == SearchListMode.Hits)
         {
-            SearchEmptyText.IsVisible = false;
+            ApplySearchListMode(SearchListMode.Hits);
             return;
         }
 
         var coverage = _indexing.GetCoverage();
         SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing);
-        SearchEmptyText.IsVisible = true;
+        ApplySearchListMode(SearchListMode.Empty);
     }
 
-    private static string FormatCoverage(IReadOnlyList<IndexedDocument> all)
-    {
-        var coverage = new IndexCoverage(
+    private static string FormatCoverage(IReadOnlyList<IndexedDocument> all) =>
+        SearchStatusFormatter.Coverage(CoverageOf(all));
+
+    private static IndexCoverage CoverageOf(IReadOnlyList<IndexedDocument> all) =>
+        new(
             all.Count,
             all.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText)),
             all.Sum(doc => doc.OcrPageCount),
             CompositeOcrEngine.CreateDefault().IsAvailable);
-        return SearchStatusFormatter.Coverage(coverage);
-    }
 
     private async Task TryPrepareOcrAndBackfillAsync()
     {
@@ -391,7 +413,7 @@ public partial class MainWindow : Window
         else if (SearchPanel.IsVisible)
         {
             SearchResultsList.ItemsSource = null;
-            SearchEmptyText.IsVisible = false;
+            ApplySearchListMode(SearchListMode.Idle);
         }
 
         var progress = new Progress<IndexingProgress>(snapshot =>
@@ -442,7 +464,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SearchEmptyText.Text = $"파일을 열지 못했습니다: {ex.Message}";
-            SearchEmptyText.IsVisible = true;
+            ApplySearchListMode(SearchListMode.Empty);
         }
     }
 

@@ -2,10 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DocuLensLocal.App.MainWindow"
         Title="DocuLens Local"
-        Height="640"
-        Width="800"
-        MinHeight="480"
-        MinWidth="640"
+        Height="680"
+        Width="840"
+        MinHeight="520"
+        MinWidth="720"
         Background="{StaticResource PageBrush}"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterScreen">
@@ -82,57 +82,132 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" LastChildFill="False">
-                        <TextBlock DockPanel.Dock="Left"
-                                   FontSize="24"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TitleBrush}"
-                                   Text="문서 검색"/>
+                    <DockPanel Grid.Row="0" LastChildFill="True">
                         <Border DockPanel.Dock="Right"
                                 Background="{StaticResource ChipBrush}"
                                 CornerRadius="12"
                                 Padding="12,6"
-                                VerticalAlignment="Center">
+                                VerticalAlignment="Center"
+                                Margin="12,0,0,0">
                             <TextBlock x:Name="IndexedSummaryText"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ChipTextBrush}"
                                        Text="인덱싱 완료"/>
                         </Border>
+                        <StackPanel>
+                            <TextBlock FontSize="24"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TitleBrush}"
+                                       Text="문서 검색"/>
+                            <TextBlock x:Name="IdleHintText"
+                                       Margin="0,4,0,0"
+                                       FontSize="13"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Text="파일명이나 본문 단어로 찾아 보세요"/>
+                        </StackPanel>
                     </DockPanel>
 
                     <Border Grid.Row="1"
-                            Margin="0,18,0,0"
+                            Margin="0,20,0,0"
                             Background="#F8FAFC"
                             BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1"
-                            CornerRadius="22"
-                            Height="44">
+                            CornerRadius="26"
+                            Height="52">
                         <DockPanel>
                             <Button x:Name="ResetSearchButton"
                                     DockPanel.Dock="Right"
-                                    Classes="secondary"
+                                    Classes="ghost"
                                     Content="초기화"
-                                    Margin="0,6,6,6"
-                                    MinWidth="88"
+                                    Margin="0,6,8,6"
                                     Click="ResetSearchButton_OnClick"/>
                             <Button x:Name="SearchButton"
                                     DockPanel.Dock="Right"
                                     Classes="primary"
                                     Content="검색"
-                                    Margin="6"
+                                    Margin="4,6,0,6"
                                     MinWidth="88"
                                     Click="SearchButton_OnClick"/>
+                            <Border DockPanel.Dock="Left"
+                                    Width="36"
+                                    Height="36"
+                                    Margin="10,0,0,0"
+                                    CornerRadius="18"
+                                    Background="{StaticResource ChipBrush}"
+                                    VerticalAlignment="Center">
+                                <Path Width="16"
+                                      Height="16"
+                                      Stretch="Uniform"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Stroke="{StaticResource AccentDarkBrush}"
+                                      StrokeThickness="1.8"
+                                      StrokeLineCap="Round"
+                                      Data="M 9,9 A 5.5,5.5 0 1 1 9,8.9 M 13.2,13.2 L 17.5,17.5"/>
+                            </Border>
                             <TextBox x:Name="SearchQueryBox"
                                      Classes="bare"
-                                     Watermark="파일명·본문으로 찾기  (예: 버스 광고 찾아줘)"
+                                     Watermark="버스 광고, 부대, 계약…"
                                      VerticalAlignment="Stretch"
                                      KeyDown="SearchQueryBox_OnKeyDown"/>
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="2" Margin="0,18,0,0">
-                        <ListBox x:Name="SearchResultsList" Classes="search" DoubleTapped="SearchResultsList_OnDoubleTapped">
+                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                        <StackPanel x:Name="IdleHintPanel"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    MaxWidth="440">
+                            <Border Width="64"
+                                    Height="64"
+                                    CornerRadius="20"
+                                    HorizontalAlignment="Center"
+                                    Background="{StaticResource ChipBrush}">
+                                <TextBlock Text="PDF"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource AccentDarkBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Margin="0,16,0,0"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TitleBrush}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Text="파일명이나 본문 단어로 찾아 보세요"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="13"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Text="검색하면 근거 문장과 함께 파일이 나타납니다."/>
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,18,0,0"
+                                        Spacing="8">
+                                <Button Classes="example"
+                                        Content="버스 광고"
+                                        Tag="버스 광고"
+                                        Click="ExampleChip_OnClick"/>
+                                <Button Classes="example"
+                                        Content="부대"
+                                        Tag="부대"
+                                        Click="ExampleChip_OnClick"/>
+                                <Button Classes="example"
+                                        Content="계약"
+                                        Tag="계약"
+                                        Click="ExampleChip_OnClick"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <ListBox x:Name="SearchResultsList"
+                                 Classes="search"
+                                 IsVisible="False"
+                                 DoubleTapped="SearchResultsList_OnDoubleTapped">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel LastChildFill="True">
@@ -184,24 +259,35 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                        <TextBlock x:Name="SearchEmptyText"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontSize="13"
-                                   Foreground="{StaticResource MutedBrush}"
-                                   TextWrapping="Wrap"
-                                   TextAlignment="Center"
-                                   IsVisible="False"
-                                   Text="검색 결과가 없습니다."/>
+
+                        <StackPanel x:Name="EmptyHintPanel"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    MaxWidth="420"
+                                    IsVisible="False">
+                            <TextBlock x:Name="SearchEmptyText"
+                                       FontSize="14"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Text="검색 결과가 없습니다."/>
+                        </StackPanel>
                     </Grid>
 
-                    <Button x:Name="ChangeFolderButton"
-                            Grid.Row="3"
-                            Classes="secondary"
-                            Margin="0,16,0,0"
-                            Content="폴더 변경 / 다시 인덱싱"
-                            HorizontalAlignment="Left"
-                            Click="ChangeFolderButton_OnClick"/>
+                    <DockPanel Grid.Row="3" Margin="0,16,0,0" LastChildFill="True">
+                        <Button x:Name="ChangeFolderButton"
+                                DockPanel.Dock="Left"
+                                Classes="secondary"
+                                Content="폴더 변경 / 다시 인덱싱"
+                                Click="ChangeFolderButton_OnClick"/>
+                        <TextBlock x:Name="IndexedFolderText"
+                                   Margin="16,0,0,0"
+                                   FontSize="12"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="NoWrap"/>
+                    </DockPanel>
                 </Grid>
 
                 <Grid x:Name="InfoPanel" IsVisible="False">

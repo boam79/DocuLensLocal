@@ -33,3 +33,16 @@ public static class SearchStatusFormatter
         return "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";
     }
 }
+
+public static class SearchIdleCopy
+{
+    public const string Headline = "파일명이나 본문 단어로 찾아 보세요";
+    public const string Subtitle = "검색하면 근거 문장과 함께 파일이 나타납니다.";
+
+    public static IReadOnlyList<string> Examples { get; } = ["버스 광고", "부대", "계약"];
+
+    public static string Hint(IndexCoverage coverage) =>
+        coverage.DocumentCount <= 0
+            ? "아직 인덱싱된 PDF가 없습니다."
+            : $"{coverage.DocumentCount}개 문서에서 파일명과 본문을 찾습니다.";
+}

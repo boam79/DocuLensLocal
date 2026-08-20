@@ -96,6 +96,26 @@ public class SearchStatusFormatterTests
     }
 }
 
+public class SearchIdleCopyTests
+{
+    [Fact]
+    public void idle_hint_names_the_indexed_document_count()
+    {
+        var hint = SearchIdleCopy.Hint(new IndexCoverage(276, 276, 707, true));
+
+        Assert.Equal("파일명이나 본문 단어로 찾아 보세요", SearchIdleCopy.Headline);
+        Assert.Contains("276개 문서", hint, StringComparison.Ordinal);
+        Assert.Contains("버스 광고", SearchIdleCopy.Examples);
+        Assert.Contains("부대", SearchIdleCopy.Examples);
+    }
+
+    [Fact]
+    public void idle_hint_without_documents_is_plain_korean()
+    {
+        Assert.Equal("아직 인덱싱된 PDF가 없습니다.", SearchIdleCopy.Hint(new IndexCoverage(0, 0, 0, false)));
+    }
+}
+
 public class TessdataLocatorTests
 {
     [Fact]
