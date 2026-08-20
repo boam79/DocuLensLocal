@@ -396,6 +396,7 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-20 (0.1.23 Executor): 빈 본문 엑셀·한글은 증분 인덱싱에서 다시 읽음. HWP 공유 열기. 설치본 v0.1.23 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 
 ## Background and Motivation (2026-08-20 엑셀·HWP 인덱싱 재확인)
@@ -415,6 +416,7 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 모드: **Executor** (엑셀·HWP 다시 읽기 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - `dotnet test` 131/131. 버전 0.1.23.
+- **v0.1.23 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.23/DocuLensLocal-win-Setup.exe
 
 
 ## Executor's Feedback or Assistance Requests
