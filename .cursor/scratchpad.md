@@ -263,6 +263,16 @@
 - **v0.1.19 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.19/DocuLensLocal-win-Setup.exe
 - 사용자 확인: 폴더에 파일 추가 후 **새 파일 인덱싱** 또는 앱 재실행. 완료 표시는 사용자 확인 후.
 
+## Current Status / Progress Tracking (2026-08-20 폴더 감시 자동 인덱싱)
+
+- 모드: **Executor** (폴더에 넣으면 자동 인덱싱 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 인덱싱이 끝난 폴더를 감시. PDF/Word/한글이 들어오면 약 3초 후 새 파일만 읽음.
+- 검색 중이면 검색어를 지우지 않음. 최초 폴더 선택만으로는 감시하지 않음.
+- `dotnet test` 116/116. 버전 0.1.20.
+- **v0.1.20 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.20/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 앱을 켠 채 폴더에 파일 추가 후 자동으로 읽히는지. 완료 표시는 사용자 확인 후.
+
 ## Current Status / Progress Tracking (2026-08-20 업데이트 후 인덱싱 이어서)
 
 - 모드: **Executor** (업데이트 후 인덱싱 이어서 — 사용자 확인 전 완료 표시 금지)
@@ -284,6 +294,7 @@
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-20 (0.1.20 Executor): 인덱싱이 끝난 폴더를 감시. 파일을 넣으면 약 3초 후 **자동으로 새 파일만** 읽음. 설치본 v0.1.20 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.19 Executor): **새 파일 인덱싱** — 이미 읽은 파일은 건너뛰고 신규·변경만 읽음. 앱 시작 시 새 파일이 있으면 자동. 설치본 v0.1.19 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.18 Executor): 인덱싱 중 업데이트하면 다시 시작 후 **남은 파일부터 이어서** 읽음. 설치본 v0.1.18 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 - 2026-08-20 (0.1.17 Executor): 검색 빈 화면 가운데 「문서」를 **PDF / WORD / HWP** 세 칸으로 바꿈. 설치본 v0.1.17 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
