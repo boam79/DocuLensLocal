@@ -369,11 +369,12 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 모드: **Executor** (Excel 본문 검색·OCR — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - `dotnet test` 125/125. App 빌드 성공. 버전 0.1.21.
+- **v0.1.21 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.21/DocuLensLocal-win-Setup.exe
 - 지원 추가: `.xlsx` / `.xlsm` / `.xls`. 글자가 거의 없으면 `xl/media`·OLE 그림 OCR.
 - 이미 인덱싱한 폴더의 Excel은 **새 파일 인덱싱**(또는 폴더 감시)으로 읽힘. 스캔 그림만 있는 파일은 **처음부터 다시 인덱싱**이 필요할 수 있음.
 - 사용자 확인: 실제 `.xlsx` 견적/계약 본문 검색, 스캔 그림 Excel OCR. 완료 표시는 사용자 확인 후.
 
 ## Executor's Feedback or Assistance Requests
 
-- 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 준비. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 
