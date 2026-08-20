@@ -114,6 +114,10 @@
   - 0.1.5 대비: Avalonia(Mac에서 `dotnet run`), 본문 추출, 로컬 OCR, 근거 문장. 설치 페이로드만 업로드.
   - Windows 설치본은 정보 탭 **업데이트**로 0.1.7을 받을 수 있음.
 
+- 2026-08-20 (UI 점검): 화면에서 276건은 보이는데 검색 버튼·목록·하단 버튼 글자가 없음.
+  - 원인: Avalonia `ContentPresenter`에 `Content="{TemplateBinding Content}"`가 없음.
+  - 수정: 0.1.8. 인덱스는 살아 있음. 업데이트 후 파일명/본문이 목록에 보여야 함.
+
 ## Current Status / Progress Tracking
 
 - 모드: **Executor** (v0.1.7 업로드 완료, 사용자 업데이트 확인 대기)
