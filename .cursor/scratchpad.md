@@ -124,7 +124,7 @@
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.11 OCR 속도 — 사용자 확인 전 완료 표시 금지)
+- 모드: **Executor** (v0.1.12 검색 초기 화면 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
 - 화면 증상(사용자 스크린샷): `인덱싱 완료 · 276건 · 본문 0건 · OCR 엔진 없음`, `부대` 검색은 파일명만 봄.
 - 원인: 예전 파일명-only `index.db`를 그대로 씀. Windows에 Tesseract가 PATH에 없어 OCR 배지까지 꺼짐.
