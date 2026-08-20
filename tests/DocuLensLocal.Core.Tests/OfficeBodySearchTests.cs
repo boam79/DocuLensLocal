@@ -11,8 +11,12 @@ public class IndexableFilesTests
     [InlineData("old.doc", IndexableFileKind.Doc, "DOC")]
     [InlineData("공문.hwpx", IndexableFileKind.Hwpx, "HWPX")]
     [InlineData("한글.hwp", IndexableFileKind.Hwp, "HWP")]
+    [InlineData("견적.xlsx", IndexableFileKind.Xlsx, "XLSX")]
+    [InlineData("매크로.XLSM", IndexableFileKind.Xlsm, "XLSM")]
+    [InlineData("old.xls", IndexableFileKind.Xls, "XLS")]
     [InlineData("notes.txt", IndexableFileKind.Unknown, "파일")]
     [InlineData("~$lock.docx", IndexableFileKind.Unknown, "파일")]
+    [InlineData("~$lock.xlsx", IndexableFileKind.Unknown, "파일")]
     public void classifies_supported_extensions_and_skips_lock_files(string path, IndexableFileKind kind, string badge)
     {
         Assert.Equal(kind, IndexableFiles.KindOf(path));
@@ -61,6 +65,8 @@ public class OfficeBodySearchTests : IDisposable
         TestOfficeFactory.WriteLegacyDoc(_docsRoot, "legacy.doc", "doc body");
         TestOfficeFactory.WriteHwpx(_docsRoot, "notice.hwpx", "hwpx body");
         TestOfficeFactory.WriteHwp(_docsRoot, "hangul.hwp", "hwp body");
+        TestOfficeFactory.WriteXlsx(_docsRoot, "quote.xlsx", "xlsx body");
+        TestOfficeFactory.WriteLegacyXls(_docsRoot, "legacy.xls", "xls body");
         File.WriteAllText(Path.Combine(_docsRoot, "notes.txt"), "not a document");
         File.WriteAllText(Path.Combine(_docsRoot, "image.png"), "nope");
         TestOfficeFactory.WriteDocx(_docsRoot, "~$memo.docx", "should skip");
@@ -68,8 +74,8 @@ public class OfficeBodySearchTests : IDisposable
         var service = new IndexingService(_userData);
         var result = await service.Start(_docsRoot);
 
-        Assert.Equal(5, result.FoundCount);
-        Assert.Equal(5, result.ProcessedCount);
+        Assert.Equal(7, result.FoundCount);
+        Assert.Equal(7, result.ProcessedCount);
         Assert.Empty(result.Errors);
         Assert.DoesNotContain(result.Documents, doc => doc.FilePath.Contains("notes.txt", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(result.Documents, doc => Path.GetFileName(doc.FilePath).StartsWith("~$", StringComparison.Ordinal));
@@ -135,20 +141,70 @@ public class OfficeBodySearchTests : IDisposable
     }
 
     [Fact]
+    public async Task xlsx_body_is_searchable_even_when_filename_does_not_match()
+    {
+        TestOfficeFactory.WriteXlsx(_docsRoot, "내부표.xlsx", "본 버스 광고 계약 조항은 을의 의무를 정한다.");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_docsRoot);
+
+        var hit = Assert.Single(service.Search("버스 광고"));
+        Assert.Equal(SearchMatchKind.Body, hit.MatchKind);
+        Assert.Contains("버스 광고 계약", hit.Snippet, StringComparison.Ordinal);
+        Assert.Contains("내부표.xlsx", hit.Document.FilePath, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("indexed", hit.Document.Status);
+        Assert.Equal("XLSX", IndexableFiles.Badge(hit.Document.FilePath));
+    }
+
+    [Fact]
+    public async Task xlsm_and_legacy_xls_bodies_are_searchable()
+    {
+        TestOfficeFactory.WriteXlsx(_docsRoot, "견적.xlsm", "본 버스 광고 계약 조항은 을의 의무를 정한다.");
+        TestOfficeFactory.WriteLegacyXls(_docsRoot, "견적.xls", "부대 시설 사용 계약");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_docsRoot);
+
+        var xlsm = Assert.Single(service.Search("버스 광고"));
+        Assert.Equal(SearchMatchKind.Body, xlsm.MatchKind);
+        Assert.Equal("XLSM", IndexableFiles.Badge(xlsm.Document.FilePath));
+
+        var xls = Assert.Single(service.Search("부대"));
+        Assert.Equal(SearchMatchKind.Body, xls.MatchKind);
+        Assert.Contains("부대 시설", xls.Snippet, StringComparison.Ordinal);
+        Assert.Equal("XLS", IndexableFiles.Badge(xls.Document.FilePath));
+    }
+
+    [Fact]
+    public void xlsx_rich_shared_string_runs_are_joined_for_search()
+    {
+        var path = TestOfficeFactory.WriteXlsxRichRuns(_docsRoot, "리치.xlsx", "버스 ", "광고 계약");
+
+        var text = ExcelZipTextExtractor.Extract(path);
+
+        Assert.Contains("버스 광고 계약", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task does_not_modify_original_office_bytes_or_mtime()
     {
         var docx = TestOfficeFactory.WriteDocx(_docsRoot, "keep.docx", "keep body");
         var hwp = TestOfficeFactory.WriteHwp(_docsRoot, "keep.hwp", "keep hwp");
+        var xlsx = TestOfficeFactory.WriteXlsx(_docsRoot, "keep.xlsx", "keep excel");
         var originalDocx = File.ReadAllBytes(docx);
         var originalHwp = File.ReadAllBytes(hwp);
+        var originalXlsx = File.ReadAllBytes(xlsx);
         var docxMtime = File.GetLastWriteTimeUtc(docx);
         var hwpMtime = File.GetLastWriteTimeUtc(hwp);
+        var xlsxMtime = File.GetLastWriteTimeUtc(xlsx);
 
         await new IndexingService(_userData).Start(_docsRoot);
 
         Assert.Equal(originalDocx, File.ReadAllBytes(docx));
         Assert.Equal(originalHwp, File.ReadAllBytes(hwp));
+        Assert.Equal(originalXlsx, File.ReadAllBytes(xlsx));
         Assert.Equal(docxMtime, File.GetLastWriteTimeUtc(docx));
         Assert.Equal(hwpMtime, File.GetLastWriteTimeUtc(hwp));
+        Assert.Equal(xlsxMtime, File.GetLastWriteTimeUtc(xlsx));
     }
 }

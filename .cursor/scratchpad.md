@@ -350,3 +350,30 @@
 
 - 성공 기준: 인덱싱이 끝난 폴더를 감시. PDF/Word/한글이 생기거나 바뀌거나 지워지면 잠깐 기다린 뒤 `NewAndChanged`만 실행. 검색 중이면 검색어를 지우지 않음. 폴더만 고른 최초실행은 감시하지 않음. `dotnet test` 통과. 버전 0.1.20.
 
+## Background and Motivation (2026-08-20 Excel 인덱싱·OCR)
+
+사용자: 엑셀이 인덱싱과 OCR이 안 되는 것 같다. 유저스토리에 입각해서 확인하고 수정해 달라.
+
+유저스토리: 계약서·견적·MOU를 파일명만이 아니라 **본문·스캔 OCR**로 찾는다. 견적·계약이 `.xlsx`/`.xls`로 있는 경우가 많다. 기존 코드는 `IndexableFiles`에 Excel이 없어 폴더를 돌아도 건너뛰었다.
+
+NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls는 OpenMcdf SST. 그림이 많고 글자가 거의 없으면 Word와 같은 OCR 임계값(80자)을 쓴다. `.xlsb`는 이번 범위 밖.
+
+## High-level Task Breakdown (2026-08-20 Excel 인덱싱·OCR)
+
+### Task K — Excel 본문 검색·스캔 OCR
+
+- 성공 기준: `.xlsx`/`.xlsm`/`.xls`가 발견·인덱싱된다. 파일명이 달라도 셀 글자(견적·계약)로 검색된다. 글자가 거의 없고 큰 그림이 있으면 OCR. 원본 mtime 유지. `~$` 잠금 파일 제외. 빈 화면에 EXCEL 칸. `dotnet test` 통과. 버전 0.1.21.
+
+## Current Status / Progress Tracking (2026-08-20 Excel 인덱싱·OCR)
+
+- 모드: **Executor** (Excel 본문 검색·OCR — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 125/125. App 빌드 성공. 버전 0.1.21.
+- 지원 추가: `.xlsx` / `.xlsm` / `.xls`. 글자가 거의 없으면 `xl/media`·OLE 그림 OCR.
+- 이미 인덱싱한 폴더의 Excel은 **새 파일 인덱싱**(또는 폴더 감시)으로 읽힘. 스캔 그림만 있는 파일은 **처음부터 다시 인덱싱**이 필요할 수 있음.
+- 사용자 확인: 실제 `.xlsx` 견적/계약 본문 검색, 스캔 그림 Excel OCR. 완료 표시는 사용자 확인 후.
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 준비. Setup.exe를 `-Wait`로 실행하지 않음.
+

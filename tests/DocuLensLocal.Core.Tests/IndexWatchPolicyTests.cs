@@ -10,9 +10,12 @@ public class IndexWatchPolicyTests
         Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/계약.pdf"));
         Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/내부문서.docx"));
         Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/스캔.hwp"));
+        Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/견적.xlsx"));
+        Assert.True(IndexWatchPolicy.ShouldWatchPath("/docs/legacy.xls"));
         Assert.True(IndexWatchPolicy.ShouldWatchPath(null));
         Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/메모.txt"));
         Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/~$잠금.docx"));
+        Assert.False(IndexWatchPolicy.ShouldWatchPath("/docs/~$잠금.xlsx"));
     }
 
     [Fact]

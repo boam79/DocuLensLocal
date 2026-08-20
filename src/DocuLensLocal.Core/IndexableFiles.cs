@@ -8,6 +8,9 @@ public enum IndexableFileKind
     Doc,
     Hwpx,
     Hwp,
+    Xlsx,
+    Xlsm,
+    Xls,
 }
 
 public static class IndexableFiles
@@ -51,6 +54,21 @@ public static class IndexableFiles
             return IndexableFileKind.Hwp;
         }
 
+        if (ext.Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            return IndexableFileKind.Xlsx;
+        }
+
+        if (ext.Equals(".xlsm", StringComparison.OrdinalIgnoreCase))
+        {
+            return IndexableFileKind.Xlsm;
+        }
+
+        if (ext.Equals(".xls", StringComparison.OrdinalIgnoreCase))
+        {
+            return IndexableFileKind.Xls;
+        }
+
         return IndexableFileKind.Unknown;
     }
 
@@ -63,6 +81,9 @@ public static class IndexableFiles
         IndexableFileKind.Doc => "DOC",
         IndexableFileKind.Hwpx => "HWPX",
         IndexableFileKind.Hwp => "HWP",
+        IndexableFileKind.Xlsx => "XLSX",
+        IndexableFileKind.Xlsm => "XLSM",
+        IndexableFileKind.Xls => "XLS",
         _ => "파일",
     };
 }

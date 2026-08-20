@@ -35,6 +35,16 @@ public sealed class CompositeDocumentExtractor : IPdfContentExtractor
                 _ocr,
                 cancellationToken),
             IndexableFileKind.Hwp => CombineHwp(path, cancellationToken),
+            IndexableFileKind.Xlsx or IndexableFileKind.Xlsm => OfficeBodyExtractor.Combine(
+                ExcelZipTextExtractor.Extract(path, cancellationToken),
+                ZipOfficeMedia.ReadImages(path, cancellationToken),
+                _ocr,
+                cancellationToken),
+            IndexableFileKind.Xls => OfficeBodyExtractor.Combine(
+                LegacyXlsTextExtractor.Extract(path, cancellationToken),
+                OleEmbeddedImages.Read(path, cancellationToken),
+                _ocr,
+                cancellationToken),
             IndexableFileKind.Doc => OfficeBodyExtractor.Combine(
                 LegacyDocTextExtractor.Extract(path, cancellationToken),
                 OleEmbeddedImages.Read(path, cancellationToken),

@@ -18,6 +18,8 @@
         <SolidColorBrush x:Key="WordBadgeTextBrush" Color="#1D4ED8"/>
         <SolidColorBrush x:Key="HwpBadgeBrush" Color="#CCFBF1"/>
         <SolidColorBrush x:Key="HwpBadgeTextBrush" Color="#0F766E"/>
+        <SolidColorBrush x:Key="ExcelBadgeBrush" Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="ExcelBadgeTextBrush" Color="#166534"/>
         <SolidColorBrush x:Key="VersionChipBrush" Color="#F1F5F9"/>
         <SolidColorBrush x:Key="VersionChipTextBrush" Color="#94A3B8"/>
     </Application.Resources>

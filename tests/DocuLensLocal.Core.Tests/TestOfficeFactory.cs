@@ -27,6 +27,114 @@ internal static class TestOfficeFactory
         return path;
     }
 
+    public static string WriteXlsx(string directory, string fileName, string text, string? number = "1500")
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        var escaped = System.Security.SecurityElement.Escape(text);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        WriteZipText(zip, "xl/sharedStrings.xml",
+            $"""
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
+              <si><t xml:space="preserve">{escaped}</t></si>
+            </sst>
+            """);
+        WriteZipText(zip, "xl/worksheets/sheet1.xml",
+            $"""
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <sheetData>
+                <row r="1">
+                  <c r="A1" t="s"><v>0</v></c>
+                  <c r="B1"><v>{number}</v></c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """);
+        WriteZipText(zip, "xl/workbook.xml",
+            """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <sheets><sheet name="계약" sheetId="1" r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></sheets>
+            </workbook>
+            """);
+        return path;
+    }
+
+    public static string WriteXlsxRichRuns(string directory, string fileName, params string[] runs)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        var siInner = string.Join(string.Empty, runs.Select(run =>
+            $"<r><t xml:space=\"preserve\">{System.Security.SecurityElement.Escape(run)}</t></r>"));
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        WriteZipText(zip, "xl/sharedStrings.xml",
+            $"""
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
+              <si>{siInner}</si>
+            </sst>
+            """);
+        WriteZipText(zip, "xl/worksheets/sheet1.xml",
+            """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <sheetData>
+                <row r="1"><c r="A1" t="s"><v>0</v></c></row>
+              </sheetData>
+            </worksheet>
+            """);
+        WriteZipText(zip, "xl/workbook.xml",
+            """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <sheets><sheet name="Sheet1" sheetId="1" r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></sheets>
+            </workbook>
+            """);
+        return path;
+    }
+
+    public static string WriteXlsxWithImage(string directory, string fileName, string text, byte[] pngBytes)
+    {
+        var path = WriteXlsx(directory, fileName, text);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Update);
+        var image = zip.CreateEntry("xl/media/image1.png");
+        using var stream = image.Open();
+        stream.Write(pngBytes);
+        return path;
+    }
+
+    public static string WriteLegacyXls(string directory, string fileName, string text)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        var payload = Encoding.Unicode.GetBytes(text);
+        var record = new byte[4 + 8 + 3 + payload.Length];
+        BinaryPrimitives.WriteUInt16LittleEndian(record.AsSpan(0), 0x00FC);
+        BinaryPrimitives.WriteUInt16LittleEndian(record.AsSpan(2), (ushort)(8 + 3 + payload.Length));
+        BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(4), 1);
+        BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(8), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(record.AsSpan(12), (ushort)text.Length);
+        record[14] = 0x01;
+        payload.CopyTo(record.AsSpan(15));
+
+        using (var root = RootStorage.Create(path))
+        {
+            using var stream = root.CreateStream("Workbook");
+            stream.Write(record);
+        }
+
+        return path;
+    }
+
+    private static void WriteZipText(ZipArchive zip, string entryName, string xml)
+    {
+        var entry = zip.CreateEntry(entryName);
+        using var writer = new StreamWriter(entry.Open(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        writer.Write(xml);
+    }
+
     public static string WriteHwpx(string directory, string fileName, string text)
     {
         Directory.CreateDirectory(directory);
