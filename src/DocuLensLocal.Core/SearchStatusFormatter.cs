@@ -50,5 +50,5 @@ public static class SearchIdleCopy
     public static string Hint(IndexCoverage coverage) =>
         coverage.DocumentCount <= 0
             ? "아직 인덱싱된 문서가 없습니다."
-            : $"{coverage.DocumentCount}개 문서에서 파일명과 본문을 찾습니다.";
+            : $"{coverage.DocumentCount}개 문서에서 파일명과 본문을 찾습니다. 폴더에 파일을 더 넣으면 자동으로 읽습니다.";
 }

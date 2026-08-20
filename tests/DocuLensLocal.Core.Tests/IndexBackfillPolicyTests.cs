@@ -124,6 +124,7 @@ public class SearchIdleCopyTests
 
         Assert.Equal("파일명이나 본문 단어로 찾아 보세요", SearchIdleCopy.Headline);
         Assert.Contains("276개 문서", hint, StringComparison.Ordinal);
+        Assert.Contains("자동으로", hint, StringComparison.Ordinal);
         Assert.Contains("버스 광고", SearchIdleCopy.Examples);
         Assert.Contains("부대", SearchIdleCopy.Examples);
     }

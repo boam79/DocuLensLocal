@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.19</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.20</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -70,6 +70,8 @@ public class SolutionSmokeTests
         Assert.Contains("CancelIndexingForUpdate", window, StringComparison.Ordinal);
         Assert.Contains("IndexPass.NewAndChanged", window, StringComparison.Ordinal);
         Assert.Contains("PlanSync", window, StringComparison.Ordinal);
+        Assert.Contains("TryWatchSyncAsync", window, StringComparison.Ordinal);
+        Assert.Contains("FolderIndexWatch", window, StringComparison.Ordinal);
     }
 
     [Fact]

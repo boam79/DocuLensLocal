@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using DocuLensLocal.Core;
 
 namespace DocuLensLocal.App;
@@ -20,6 +21,8 @@ public partial class MainWindow : Window
     private bool _showMainSearch;
     private bool _searchSubmitted;
     private bool _resumeIndexingAfterUpdate;
+    private bool _pendingWatchSync;
+    private readonly FolderIndexWatch _folderWatch;
 
     public MainWindow()
         : this(new VelopackUpdateFeed())
@@ -30,9 +33,14 @@ public partial class MainWindow : Window
     {
         _updateFeed = updateFeed;
         InitializeComponent();
+        _folderWatch = new FolderIndexWatch(IndexWatchPolicy.Debounce, () =>
+        {
+            Dispatcher.UIThread.Post(() => _ = TryWatchSyncAsync());
+        });
         LoadInfoPanel();
         ApplyStartupView();
         Opened += OnOpened;
+        Closed += OnWindowClosed;
     }
 
     private async void OnOpened(object? sender, EventArgs e)
@@ -43,11 +51,18 @@ public partial class MainWindow : Window
             await TryShowPendingUpdateNotesAsync().ConfigureAwait(true);
             await TryPromptForUpdateAsync().ConfigureAwait(true);
             await TryResumeOrBackfillIndexingAsync().ConfigureAwait(true);
+            RefreshFolderWatch();
         }
         catch (Exception ex)
         {
             IndexedSummaryText.Text = $"시작하지 못했습니다: {ex.Message}";
         }
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        Closed -= OnWindowClosed;
+        _folderWatch.Dispose();
     }
 
     private async Task TryShowPendingUpdateNotesAsync()
@@ -293,6 +308,7 @@ public partial class MainWindow : Window
         var settings = LoadSettings();
         settings.IndexFolder = path;
         SaveSettings(settings);
+        _folderWatch.Stop();
         ShowSavedFolder();
         UpdateIndexButtonState();
         IndexStatusText.Text = "폴더를 선택했습니다. 인덱싱을 누르면 시작합니다.";
@@ -343,6 +359,7 @@ public partial class MainWindow : Window
             _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
+            RefreshFolderWatch();
         }
     }
 
@@ -372,6 +389,7 @@ public partial class MainWindow : Window
         _showMainSearch = true;
         SearchTab.IsChecked = true;
         ShowMainSearch(resetSearch: true);
+        RefreshFolderWatch();
     }
 
     private void SearchButton_OnClick(object? sender, RoutedEventArgs e) => RunSearch();
@@ -406,6 +424,7 @@ public partial class MainWindow : Window
 
     private void ChangeFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
+        _folderWatch.Stop();
         _showMainSearch = false;
         SearchTab.IsChecked = true;
         ShowFirstRun();
@@ -442,23 +461,28 @@ public partial class MainWindow : Window
         await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
     }
 
-    private async Task RunIndexingPassAsync(string folder, IndexPass pass, string startMessage)
+    private async Task RunIndexingPassAsync(string folder, IndexPass pass, string startMessage, bool preserveSearch = false)
     {
         if (_isIndexing)
         {
+            _pendingWatchSync = true;
             return;
         }
 
         _isIndexing = true;
         UpdateIndexButtonState();
-        _searchSubmitted = false;
-        SearchQueryBox.Text = string.Empty;
-        SearchResultsList.ItemsSource = null;
-        ApplySearchListMode(SearchListMode.Idle);
+        if (!preserveSearch)
+        {
+            _searchSubmitted = false;
+            SearchQueryBox.Text = string.Empty;
+            SearchResultsList.ItemsSource = null;
+            ApplySearchListMode(SearchListMode.Idle);
+            IdleHintText.Text = pass == IndexPass.NewAndChanged
+                ? "이미 읽은 파일은 그대로 두고, 새로 넣거나 바뀐 파일만 읽습니다."
+                : "파일명이나 본문 단어로 찾아 보세요";
+        }
+
         IndexedSummaryText.Text = startMessage;
-        IdleHintText.Text = pass == IndexPass.NewAndChanged
-            ? "이미 읽은 파일은 그대로 두고, 새로 넣거나 바뀐 파일만 읽습니다."
-            : "파일명이나 본문 단어로 찾아 보세요";
         BeginIndexingCancellation();
         MarkIndexingStarted();
 
@@ -481,7 +505,21 @@ public partial class MainWindow : Window
             _showMainSearch = true;
             if (SearchTab.IsChecked == true)
             {
-                ShowMainSearch(resetSearch: true);
+                if (preserveSearch)
+                {
+                    if (_searchSubmitted)
+                    {
+                        RunSearch();
+                    }
+                    else
+                    {
+                        ShowIdleSearch();
+                    }
+                }
+                else
+                {
+                    ShowMainSearch(resetSearch: true);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -499,6 +537,13 @@ public partial class MainWindow : Window
             _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
+            RefreshFolderWatch();
+        }
+
+        if (_pendingWatchSync)
+        {
+            _pendingWatchSync = false;
+            await TryWatchSyncAsync().ConfigureAwait(true);
         }
     }
 
@@ -567,6 +612,7 @@ public partial class MainWindow : Window
             _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
+            RefreshFolderWatch();
         }
     }
 
@@ -791,6 +837,7 @@ public partial class MainWindow : Window
             _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
+            RefreshFolderWatch();
         }
     }
 
@@ -807,6 +854,42 @@ public partial class MainWindow : Window
         var settings = LoadSettings();
         IndexingRunState.OnStarted(settings);
         SaveSettings(settings);
+    }
+
+    private void RefreshFolderWatch()
+    {
+        var settings = LoadSettings();
+        if (IndexWatchPolicy.ShouldWatchFolder(settings))
+        {
+            _folderWatch.SetFolder(settings.IndexFolder);
+            return;
+        }
+
+        _folderWatch.Stop();
+    }
+
+    private async Task TryWatchSyncAsync()
+    {
+        if (_isIndexing)
+        {
+            _pendingWatchSync = true;
+            return;
+        }
+
+        var settings = LoadSettings();
+        if (!IndexWatchPolicy.ShouldWatchFolder(settings) || string.IsNullOrWhiteSpace(settings.IndexFolder))
+        {
+            return;
+        }
+
+        var folder = settings.IndexFolder;
+        var plan = _indexing.PlanSync(folder);
+        if (!plan.NeedsWork)
+        {
+            return;
+        }
+
+        await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…", preserveSearch: true).ConfigureAwait(true);
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)
