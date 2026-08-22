@@ -78,6 +78,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
@@ -155,61 +156,63 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                    <StackPanel Grid.Row="2" Margin="0,14,0,0" HorizontalAlignment="Center">
+                        <StackPanel x:Name="IdleFormatBadges"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Spacing="12">
+                            <Button x:Name="PdfFormatButton"
+                                    Classes="format pdf"
+                                    Width="72"
+                                    Height="72"
+                                    FontSize="16"
+                                    Tag="Pdf"
+                                    ToolTip.Tip="PDF만 검색"
+                                    Content="PDF"
+                                    Click="FormatFilterButton_OnClick"/>
+                            <Button x:Name="WordFormatButton"
+                                    Classes="format word"
+                                    Width="72"
+                                    Height="72"
+                                    FontSize="15"
+                                    Tag="Word"
+                                    ToolTip.Tip="Word만 검색"
+                                    Content="WORD"
+                                    Click="FormatFilterButton_OnClick"/>
+                            <Button x:Name="HangulFormatButton"
+                                    Classes="format hwp"
+                                    Width="72"
+                                    Height="72"
+                                    FontSize="16"
+                                    Tag="Hangul"
+                                    ToolTip.Tip="한글(HWP)만 검색"
+                                    Content="HWP"
+                                    Click="FormatFilterButton_OnClick"/>
+                            <Button x:Name="ExcelFormatButton"
+                                    Classes="format excel"
+                                    Width="72"
+                                    Height="72"
+                                    FontSize="13"
+                                    Tag="Excel"
+                                    ToolTip.Tip="Excel만 검색"
+                                    Content="EXCEL"
+                                    Click="FormatFilterButton_OnClick"/>
+                        </StackPanel>
+                        <TextBlock x:Name="FormatFilterHintText"
+                                   Margin="0,10,0,0"
+                                   FontSize="13"
+                                   Foreground="{StaticResource ChipTextBrush}"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Text="종류를 누른 뒤 검색하면 그 파일만 나옵니다"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="3" Margin="0,8,0,0">
                         <StackPanel x:Name="IdleHintPanel"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     MaxWidth="440">
-                            <StackPanel x:Name="IdleFormatBadges"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        Spacing="12">
-                                <Border Width="72"
-                                        Height="72"
-                                        CornerRadius="20"
-                                        Background="{StaticResource PdfBadgeBrush}">
-                                    <TextBlock Text="PDF"
-                                               FontSize="16"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource PdfBadgeTextBrush}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <Border Width="72"
-                                        Height="72"
-                                        CornerRadius="20"
-                                        Background="{StaticResource WordBadgeBrush}">
-                                    <TextBlock Text="WORD"
-                                               FontSize="15"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource WordBadgeTextBrush}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <Border Width="72"
-                                        Height="72"
-                                        CornerRadius="20"
-                                        Background="{StaticResource HwpBadgeBrush}">
-                                    <TextBlock Text="HWP"
-                                               FontSize="16"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource HwpBadgeTextBrush}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <Border Width="72"
-                                        Height="72"
-                                        CornerRadius="20"
-                                        Background="{StaticResource ExcelBadgeBrush}">
-                                    <TextBlock Text="EXCEL"
-                                               FontSize="13"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource ExcelBadgeTextBrush}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                            <TextBlock Margin="0,14,0,0"
+                            <TextBlock Margin="0,0,0,0"
                                        FontSize="13"
                                        Foreground="{StaticResource ChipTextBrush}"
                                        TextAlignment="Center"
@@ -317,7 +320,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <DockPanel Grid.Row="3" Margin="0,16,0,0" LastChildFill="True">
+                    <DockPanel Grid.Row="4" Margin="0,16,0,0" LastChildFill="True">
                         <Button x:Name="ChangeFolderButton"
                                 DockPanel.Dock="Left"
                                 Classes="secondary"

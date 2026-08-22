@@ -421,7 +421,23 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - **Planner 2026-08-20:** 사용자 확인 완료. 엑셀·한글이 안 읽히던 직접 원인은 선택한 폴더가 `인수인계\계약서_스캔`이고, 파일은 상위 `인수인계`에 있었음. 폴더 변경으로 해결.
 
 
+## Background and Motivation (2026-08-22 확장자별 검색)
+
+사용자: 키워드 검색은 모든 종류가 섞여 나온다. 가운데 PDF / WORD / HWP / EXCEL 마크를 버튼처럼 눌러, 그 종류만 검색하고 싶다.
+
+## High-level Task Breakdown (2026-08-22 확장자별 검색)
+
+### Task N — 확장자 버튼으로 검색 필터
+
+- 성공 기준: PDF→`.pdf`, WORD→`.docx`/`.doc`, HWP→`.hwp`/`.hwpx`, EXCEL→`.xlsx`/`.xlsm`/`.xls`. 다시 누르면 전체. 검색창 아래 버튼이 결과 화면에서도 보임. `dotnet test` 통과. 버전 0.1.24.
+
+## Current Status / Progress Tracking (2026-08-22 확장자별 검색)
+
+- 모드: **Executor** (확장자 필터 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-22 (확장자 검색 Executor): 가운데 형식 마크를 토글 버튼으로 바꿔, 선택한 확장자만 검색되게 구현 중.
 - 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 

@@ -159,7 +159,10 @@ public sealed class IndexingService
     public IReadOnlyList<IndexedDocument> SearchByFileName(string query) =>
         Search(query).Select(hit => hit.Document).ToList();
 
-    public IReadOnlyList<SearchHit> Search(string query)
+    public IReadOnlyList<SearchHit> Search(string query) =>
+        Search(query, SearchFormatFilter.All);
+
+    public IReadOnlyList<SearchHit> Search(string query, SearchFormatFilter format)
     {
         if (string.IsNullOrWhiteSpace(query) || !File.Exists(IndexDatabasePath))
         {
@@ -167,7 +170,13 @@ public sealed class IndexingService
         }
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
-        return store.Search(query);
+        var hits = store.Search(query);
+        if (format == SearchFormatFilter.All)
+        {
+            return hits;
+        }
+
+        return hits.Where(hit => IndexableFiles.Matches(hit.Document.FilePath, format)).ToList();
     }
 
     public int ClearIndex()

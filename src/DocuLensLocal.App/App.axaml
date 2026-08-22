@@ -142,6 +142,50 @@
             <Setter Property="Background" Value="#99F6E4"/>
         </Style>
 
+        <Style Selector="Button.format">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent"
+                            BorderThickness="3"
+                            CornerRadius="20"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.format.pdf">
+            <Setter Property="Background" Value="{StaticResource PdfBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource PdfBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.word">
+            <Setter Property="Background" Value="{StaticResource WordBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource WordBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.hwp">
+            <Setter Property="Background" Value="{StaticResource HwpBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource HwpBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.excel">
+            <Setter Property="Background" Value="{StaticResource ExcelBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ExcelBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format:pointerover /template/ Border#Bd">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        </Style>
+        <Style Selector="Button.format.selected /template/ Border#Bd">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentDarkBrush}"/>
+        </Style>
+
         <Style Selector="Button.fullwidth">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="Padding" Value="18,14"/>

@@ -74,6 +74,20 @@ public static class IndexableFiles
 
     public static bool IsIndexable(string path) => KindOf(path) != IndexableFileKind.Unknown;
 
+    public static bool Matches(string path, SearchFormatFilter filter)
+    {
+        var kind = KindOf(path);
+        return filter switch
+        {
+            SearchFormatFilter.All => true,
+            SearchFormatFilter.Pdf => kind == IndexableFileKind.Pdf,
+            SearchFormatFilter.Word => kind is IndexableFileKind.Docx or IndexableFileKind.Doc,
+            SearchFormatFilter.Hangul => kind is IndexableFileKind.Hwp or IndexableFileKind.Hwpx,
+            SearchFormatFilter.Excel => kind is IndexableFileKind.Xlsx or IndexableFileKind.Xlsm or IndexableFileKind.Xls,
+            _ => false,
+        };
+    }
+
     public static string Badge(string path) => KindOf(path) switch
     {
         IndexableFileKind.Pdf => "PDF",

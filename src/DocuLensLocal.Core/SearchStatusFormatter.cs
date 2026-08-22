@@ -19,8 +19,17 @@ public static class SearchStatusFormatter
     public static string NewFilesProgress(int processedCount, int foundCount) =>
         $"새 파일 읽는 중 · {processedCount} / {foundCount}";
 
-    public static string EmptyResults(int documentCount, int bodyCount, bool indexingNow)
+    public static string EmptyResults(
+        int documentCount,
+        int bodyCount,
+        bool indexingNow,
+        SearchFormatFilter format = SearchFormatFilter.All)
     {
+        if (format != SearchFormatFilter.All && documentCount > 0)
+        {
+            return $"{SearchFormatFilters.LabelKo(format)}에서 조건에 맞는 파일이 없습니다. 종류를 다시 누르면 전체를 찾습니다.";
+        }
+
         if (documentCount == 0)
         {
             return "인덱싱된 문서가 없습니다. 아래에서 폴더를 바꾸거나 「처음부터 다시 인덱싱」을 누르세요.";

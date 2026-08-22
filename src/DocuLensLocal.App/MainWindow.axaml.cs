@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private bool _resumeIndexingAfterUpdate;
     private bool _pendingWatchSync;
     private int _watchRetryCount;
+    private SearchFormatFilter _formatFilter = SearchFormatFilter.All;
     private readonly FolderIndexWatch _folderWatch;
 
     public MainWindow()
@@ -34,6 +35,7 @@ public partial class MainWindow : Window
     {
         _updateFeed = updateFeed;
         InitializeComponent();
+        ApplyFormatFilterVisuals();
         _folderWatch = new FolderIndexWatch(IndexWatchPolicy.Debounce, () =>
         {
             Dispatcher.UIThread.Post(() => _ = TryWatchSyncAsync());
@@ -414,6 +416,40 @@ public partial class MainWindow : Window
         RunSearch();
     }
 
+    private void FormatFilterButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button
+            || button.Tag is not string tag
+            || !Enum.TryParse(tag, ignoreCase: true, out SearchFormatFilter clicked)
+            || clicked == SearchFormatFilter.All)
+        {
+            return;
+        }
+
+        _formatFilter = SearchFormatFilters.Toggle(_formatFilter, clicked);
+        ApplyFormatFilterVisuals();
+        if (_searchSubmitted)
+        {
+            RunSearch();
+        }
+    }
+
+    private void ApplyFormatFilterVisuals()
+    {
+        SetFormatSelected(PdfFormatButton, SearchFormatFilter.Pdf);
+        SetFormatSelected(WordFormatButton, SearchFormatFilter.Word);
+        SetFormatSelected(HangulFormatButton, SearchFormatFilter.Hangul);
+        SetFormatSelected(ExcelFormatButton, SearchFormatFilter.Excel);
+        FormatFilterHintText.Text = SearchFormatFilters.Hint(_formatFilter);
+    }
+
+    private void SetFormatSelected(Button button, SearchFormatFilter format)
+    {
+        var selected = _formatFilter == format;
+        button.Classes.Set("selected", selected);
+        button.Opacity = _formatFilter != SearchFormatFilter.All && !selected ? 0.45 : 1;
+    }
+
     private void SearchQueryBox_OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -664,6 +700,7 @@ public partial class MainWindow : Window
         var coverage = CoverageOf(all);
         IndexedSummaryText.Text = SearchStatusFormatter.Coverage(coverage);
         IdleHintText.Text = SearchIdleCopy.Hint(coverage);
+        FormatFilterHintText.Text = SearchFormatFilters.Hint(_formatFilter);
         IndexedFolderText.Text = LoadSettings().IndexFolder ?? string.Empty;
         SearchResultsList.ItemsSource = null;
         ApplySearchListMode(SearchListMode.Idle);
@@ -687,7 +724,7 @@ public partial class MainWindow : Window
         }
 
         var all = _indexing.GetIndexedDocuments();
-        var rows = _indexing.Search(query!).Select(hit => new SearchResultRow
+        var rows = _indexing.Search(query!, _formatFilter).Select(hit => new SearchResultRow
         {
             FileName = Path.GetFileName(hit.Document.FilePath),
             FilePath = hit.Document.FilePath,
@@ -709,7 +746,7 @@ public partial class MainWindow : Window
         }
 
         var coverage = _indexing.GetCoverage();
-        SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing);
+        SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing, _formatFilter);
         ApplySearchListMode(SearchListMode.Empty);
     }
 

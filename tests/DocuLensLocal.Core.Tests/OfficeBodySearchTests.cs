@@ -24,6 +24,25 @@ public class IndexableFilesTests
         Assert.Equal(badge, IndexableFiles.Badge(path));
         Assert.Equal(kind != IndexableFileKind.Unknown, IndexableFiles.IsIndexable(path));
     }
+
+    [Theory]
+    [InlineData("/docs/a.pdf", SearchFormatFilter.All, true)]
+    [InlineData("/docs/a.pdf", SearchFormatFilter.Pdf, true)]
+    [InlineData("/docs/a.pdf", SearchFormatFilter.Word, false)]
+    [InlineData("/docs/memo.docx", SearchFormatFilter.Word, true)]
+    [InlineData("/docs/old.doc", SearchFormatFilter.Word, true)]
+    [InlineData("/docs/memo.docx", SearchFormatFilter.Pdf, false)]
+    [InlineData("/docs/공문.hwp", SearchFormatFilter.Hangul, true)]
+    [InlineData("/docs/공문.hwpx", SearchFormatFilter.Hangul, true)]
+    [InlineData("/docs/공문.hwp", SearchFormatFilter.Excel, false)]
+    [InlineData("/docs/견적.xlsx", SearchFormatFilter.Excel, true)]
+    [InlineData("/docs/매크로.xlsm", SearchFormatFilter.Excel, true)]
+    [InlineData("/docs/old.xls", SearchFormatFilter.Excel, true)]
+    [InlineData("/docs/견적.xlsx", SearchFormatFilter.Hangul, false)]
+    public void matches_search_format_groups(string path, SearchFormatFilter filter, bool expected)
+    {
+        Assert.Equal(expected, IndexableFiles.Matches(path, filter));
+    }
 }
 
 public class OfficeBodySearchTests : IDisposable
@@ -174,6 +193,46 @@ public class OfficeBodySearchTests : IDisposable
         Assert.Equal(SearchMatchKind.Body, xls.MatchKind);
         Assert.Contains("부대 시설", xls.Snippet, StringComparison.Ordinal);
         Assert.Equal("XLS", IndexableFiles.Badge(xls.Document.FilePath));
+    }
+
+    [Fact]
+    public async Task search_can_limit_hits_to_the_selected_format()
+    {
+        TestPdfFactory.WriteDigitalPdf(_docsRoot, "busad.pdf", "busad body");
+        TestOfficeFactory.WriteDocx(_docsRoot, "busad.docx", "busad body");
+        TestOfficeFactory.WriteLegacyDoc(_docsRoot, "busad.doc", "busad body");
+        TestOfficeFactory.WriteHwp(_docsRoot, "busad.hwp", "busad body");
+        TestOfficeFactory.WriteHwpx(_docsRoot, "busad.hwpx", "busad body");
+        TestOfficeFactory.WriteXlsx(_docsRoot, "busad.xlsx", "busad body");
+        TestOfficeFactory.WriteLegacyXls(_docsRoot, "busad.xls", "busad body");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_docsRoot);
+
+        Assert.Equal(7, service.Search("busad").Count);
+        Assert.Equal(7, service.Search("busad", SearchFormatFilter.All).Count);
+
+        var pdf = Assert.Single(service.Search("busad", SearchFormatFilter.Pdf));
+        Assert.EndsWith(".pdf", pdf.Document.FilePath, StringComparison.OrdinalIgnoreCase);
+
+        var word = service.Search("busad", SearchFormatFilter.Word);
+        Assert.Equal(2, word.Count);
+        Assert.All(word, hit => Assert.True(
+            hit.Document.FilePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".doc", StringComparison.OrdinalIgnoreCase)));
+
+        var hangul = service.Search("busad", SearchFormatFilter.Hangul);
+        Assert.Equal(2, hangul.Count);
+        Assert.All(hangul, hit => Assert.True(
+            hit.Document.FilePath.EndsWith(".hwp", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".hwpx", StringComparison.OrdinalIgnoreCase)));
+
+        var excel = service.Search("busad", SearchFormatFilter.Excel);
+        Assert.Equal(2, excel.Count);
+        Assert.All(excel, hit => Assert.True(
+            hit.Document.FilePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".xls", StringComparison.OrdinalIgnoreCase)));
+        Assert.DoesNotContain(excel, hit => hit.Document.FilePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

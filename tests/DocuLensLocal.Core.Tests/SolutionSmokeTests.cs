@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.23</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.24</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -33,10 +33,16 @@ public class SolutionSmokeTests
         Assert.Contains("Content=\"초기화\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"IdleHintPanel\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"IdleFormatBadges\"", axaml, StringComparison.Ordinal);
-        Assert.Contains("Text=\"PDF\"", axaml, StringComparison.Ordinal);
-        Assert.Contains("Text=\"WORD\"", axaml, StringComparison.Ordinal);
-        Assert.Contains("Text=\"HWP\"", axaml, StringComparison.Ordinal);
-        Assert.Contains("Text=\"EXCEL\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"PdfFormatButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"WordFormatButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"HangulFormatButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"ExcelFormatButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Click=\"FormatFilterButton_OnClick\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"PDF\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"WORD\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"HWP\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"EXCEL\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("종류를 누른 뒤 검색하면 그 파일만 나옵니다", axaml, StringComparison.Ordinal);
         Assert.Contains("PDF · Word · 한글(HWP) · Excel 파일을 찾을 수 있습니다", axaml, StringComparison.Ordinal);
         Assert.DoesNotContain("Text=\"문서\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"버스 광고\"", axaml, StringComparison.Ordinal);
@@ -74,6 +80,9 @@ public class SolutionSmokeTests
         Assert.Contains("TryWatchSyncAsync", window, StringComparison.Ordinal);
         Assert.Contains("FolderIndexWatch", window, StringComparison.Ordinal);
         Assert.Contains("_folderWatch.Ping()", window, StringComparison.Ordinal);
+        Assert.Contains("FormatFilterButton_OnClick", window, StringComparison.Ordinal);
+        Assert.Contains("_formatFilter", window, StringComparison.Ordinal);
+        Assert.Contains("Search(query!, _formatFilter)", window, StringComparison.Ordinal);
     }
 
     [Fact]
