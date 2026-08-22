@@ -175,8 +175,10 @@ public class SolutionSmokeTests
         Assert.Contains("개발.md", index, StringComparison.Ordinal);
         Assert.Contains("고도화.md", index, StringComparison.Ordinal);
         Assert.Contains("ui-ux-제안.md", index, StringComparison.Ordinal);
+        Assert.Contains("보안-제안.md", index, StringComparison.Ordinal);
         Assert.Contains("변경-이력.md", index, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(docs, "검색.md")));
+        Assert.True(File.Exists(Path.Combine(docs, "보안-제안.md")));
         var search = File.ReadAllText(Path.Combine(docs, "검색.md"));
         Assert.Contains("여러 개를 함께", search, StringComparison.Ordinal);
         Assert.Contains("폴더에서 보기", search, StringComparison.Ordinal);

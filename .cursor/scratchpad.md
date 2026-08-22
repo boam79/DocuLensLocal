@@ -506,9 +506,7 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 ## Current Status / Progress Tracking (2026-08-22 1안)
 
-- 모드: **Executor** (정보 탭 1안 — 사용자 확인 전 완료 표시 금지)
-- 범위: 정보 1안만. 정보 2·3안, 검색 2·3안은 제외.
-- 버전 선언 0.1.28.
+- (outdated) 검색 1안 이후 상태는 아래 **정보 1안** 절을 보세요.
 
 ## Background and Motivation (2026-08-22 정보 탭)
 
@@ -540,6 +538,22 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 범위: 정보 1안만. 정보 2·3안, 검색 2·3안은 제외.
 - `dotnet test` 183 통과. 버전 0.1.28.
 - **v0.1.28 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.28/DocuLensLocal-win-Setup.exe
+
+## Background and Motivation (2026-08-22 보안)
+
+사용자: 보안에 대한 제안을 요청. Planner만. 구현 없음.
+
+이미 지키는 것: 원문 비송신, 원본 읽기만, HTTPS GitHub 업데이트, 검색 파라미터, 매크로 미실행(열기는 셸).
+
+남은 실제 이슈: 정보 탭에 약속이 안 보임, 설치 파일 미서명, index.db에 본문 평문, 열기는 엑셀/워드.
+
+## High-level Task Breakdown (보안, 미승인)
+
+보안 1안(추천): 정보 탭 한 줄 + 매크로 가능 파일 열 때 안내.
+보안 2안: Authenticode 서명. 인증서 구매 필요.
+보안 3안: index.db를 Windows 계정 DPAPI/SQLCipher로 잠금.
+
+사용자 선택 후 Executor.
 
 
 
