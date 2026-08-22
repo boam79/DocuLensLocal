@@ -531,7 +531,16 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 사용자 선택 후 Executor. 지금은 Planner 제안만.
 
-- 2026-08-22 (0.1.28 Executor): **정보 1안만** 진행. 상태 카드(폴더·건수·본문/OCR·팁), 이력 최근 5개 + 이전 버전, 업데이트 문구. 정보 2·3안은 하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+- 2026-08-22 (0.1.28 Executor): **정보 1안만** 진행. 상태 카드(폴더·건수·본문/OCR·팁), 이력 최근 5개 + 이전 버전, 업데이트 문구. 정보 2·3안은 하지 않음. `dotnet test` 183 통과. **v0.1.28 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.28/DocuLensLocal-win-Setup.exe
+
+## Current Status / Progress Tracking (2026-08-22 정보 1안)
+
+- 모드: **Executor** (정보 탭 1안 — 사용자 확인 전 완료 표시 금지)
+- 범위: 정보 1안만. 정보 2·3안, 검색 2·3안은 제외.
+- `dotnet test` 183 통과. 버전 0.1.28.
+- **v0.1.28 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.28/DocuLensLocal-win-Setup.exe
+
 
 
 
