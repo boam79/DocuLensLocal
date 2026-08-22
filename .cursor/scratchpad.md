@@ -117,13 +117,21 @@
 - 2026-08-20 (UI 점검): 화면에서 276건은 보이는데 검색 버튼·목록·하단 버튼 글자가 없음.
   - 원인: Avalonia `ContentPresenter`에 `Content="{TemplateBinding Content}"`가 없음.
   - 수정: 0.1.8. 인덱스는 살아 있음. 업데이트 후 파일명/본문이 목록에 보여야 함.
+- 2026-08-20 (0.1.11 Executor): OCR 속도. 페이지마다 TesseractEngine 생성 + kor+eng 동시 로드가 병목.
+  - 엔진 재사용, 한국어 우선(글자 적으면 영어 한 번), 회색조 120dpi JPEG, PDF 스트림 재사용, 본문 있는 파일은 건너뜀, 빈 페이지에 CLI 재실행 안 함.
+  - `dotnet test` 66/66. 사용자: 정보 탭 업데이트 후 다시 인덱싱 체감 속도 확인.
+- 2026-08-20 (0.1.13 Executor): 검색 초기 화면이 너무 비어 보임. 안내 문구·예시 칩(버스 광고/부대/계약)·폴더 경로 표시. 파일 목록은 검색 후에만.
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (v0.1.7 업로드 완료, 사용자 업데이트 확인 대기)
+- 모드: **Executor** (v0.1.12 검색 초기 화면 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
-- origin/main: `daa2a33`. 릴리스 태그: v0.1.7
-- 다음: Windows 설치본 정보 탭에서 업데이트, 또는 Setup.exe 재설치. Mac은 git pull 후 `dotnet run`.
+- 화면 증상(사용자 스크린샷): `인덱싱 완료 · 276건 · 본문 0건 · OCR 엔진 없음`, `부대` 검색은 파일명만 봄.
+- 원인: 예전 파일명-only `index.db`를 그대로 씀. Windows에 Tesseract가 PATH에 없어 OCR 배지까지 꺼짐.
+- 이번 슬라이스: 설치본에 Tesseract native + tessdata(kor/eng) 포함. 본문 0건이면 저장된 폴더를 자동 재인덱스. 버전 0.1.10.
+- `dotnet test` 63/63 (Linux 클라우드).
+- **v0.1.10 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.10/DocuLensLocal-win-Setup.exe
+- Planner/사용자: 정보 탭 **업데이트** 후 앱을 다시 켜면 본문을 자동으로 읽는지, `부대` 검색이 되는지 확인 요청. 완료 표시는 사용자 확인 후.
 
 ---
 
@@ -174,4 +182,388 @@
 - WPF(`net10.0-windows`)는 Mac에서 빌드·실행이 안 된다. 데스크톱 UI는 Avalonia + `net10.0`으로 둔다. Mac 경로는 `LocalApplicationData` → `~/Library/Application Support/DocuLensLocal`.
 - 사용자는 Mac 설치본을 원하지 않는다. Mac은 `dotnet run`으로 개발·기능 테스트만. `pack.ps1`은 Windows Setup.exe만 만든다.
 - 파일명만 인덱싱하면 탐색기와 차별이 없다. 디지털 PDF는 PdfPig 본문, 스캔은 로컬 Tesseract. 검색 결과는 근거 스니펫이 있어야 한다.
+- Windows 사용자는 Tesseract를 따로 설치하지 않는다. 설치본에 `x64/tesseract50.dll` + `tessdata/eng|kor.traineddata`(tessdata_fast)를 넣고, PATH CLI는 보조만 쓴다.
+- 예전 인덱스(본문 0건)는 안내 문구만으로 해결되지 않는다. 저장된 `IndexFolder`가 있으면 시작 시 자동 재인덱싱해야 한다.
+- charlesw Tesseract 5.2.0 native 파일 이름은 `tesseract41.dll`이 아니라 `tesseract50.dll`이다.
+- OCR 속도: 페이지마다 `new TesseractEngine` 하지 말 것. `kor+eng` 동시 로드는 한국어만보다 훨씬 느리다. 회색조 120dpi + JPEG면 검색용으로 충분하다.
+- 엑셀·HWP가 「인덱싱 안 됨」이면 먼저 검색 화면 오른쪽 아래 **실제 폴더 경로**를 본다. 파일은 `인수인계`에 있고 인덱스는 `인수인계\계약서_스캔`이면 상위 폴더 파일은 안 읽힌다. 하위만 재귀한다.
+- 확장자 필터 버튼은 Idle 안내 안에 두면 검색 후 사라진다. 검색창 아래에 항상 두고, 이미 검색한 뒤에도 누르면 그 종류로 다시 찾게 한다.
+- 검색 결과 행은 더블클릭만 있으면 사용자가 못 연다. **열기** 버튼과 검색어 강조를 같이 둔다. 전체 경로 대신 상위 폴더명이 폴더 오인(계약서_스캔 vs 인수인계)을 더 잘 보여 준다.
+
+## Background and Motivation (2026-08-20 Word·HWP)
+
+사용자: 프로그램이 PDF만 본다. Word·HWP가 기술적으로 가능한지 확인하고, 가능하면 진행해 달라.
+
+결론: 가능. 원본은 읽기만, 서버 업로드 없음, 인덱스는 userdata.
+
+| 확장자 | 본문 추출 |
+|---|---|
+| `.docx` | ZIP + `w:t` XML |
+| `.doc` | OLE `WordDocument` 스트림(OpenMcdf, 유니코드 FIB) |
+| `.hwpx` | ZIP + `hp:t` XML |
+| `.hwp` | HwpLibSharp `HWPReader` + `TextExtractor` |
+| `.pdf` | 기존 PdfPig + OCR |
+
+## High-level Task Breakdown (2026-08-20 Word·HWP)
+
+### Task D — Word·한글 본문 인덱싱
+
+- 성공 기준: 파일명이 달라도 DOCX/HWPX/HWP 본문 단어로 검색됨. txt/png는 제외. 원본 mtime 유지. UI 뱃지가 확장자를 말함. `dotnet test` 통과. 버전 0.1.14.
+
+## Current Status / Progress Tracking
+
+- 모드: **Executor** (Word·HWP 본문 검색 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 84/84. App 빌드 성공. 버전 0.1.14.
+- 지원: PDF(기존 OCR) + DOCX/DOC + HWP/HWPX. txt/png/`~$` 잠금 파일은 제외. 원본 읽기 전용.
+- 사용자 확인: 정보 탭 업데이트 후 **다시 인덱싱**, Word·한글 본문 단어로 검색되는지. 완료 표시는 사용자 확인 후.
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-20 (0.1.14 Executor): Word·한글 본문 검색을 넣음. PDF만 보던 발견을 `.pdf/.docx/.doc/.hwp/.hwpx`로 넓힘. NPOI는 취약점 의존성 때문에 쓰지 않음. 예전 PDF 인덱스는 **다시 인덱싱**이 필요함.
+
+## Background and Motivation (2026-08-20 인덱스 초기화)
+
+사용자: 인덱싱한 것을 초기화하고 재인덱싱하는 기능도 넣어 달라.
+
+지금 「폴더 변경 / 다시 인덱싱」은 폴더 선택 화면으로만 돌아간다. `index.db`는 그대로이고, 크기·mtime이 같으면 본문을 다시 읽지 않는다. 지워진 파일도 목록에 남을 수 있다.
+
+## High-level Task Breakdown (2026-08-20 인덱스 초기화)
+
+### Task E — 인덱스 비우고 처음부터 다시 읽기
+
+- 성공 기준: Clear 후 검색 0건, 원본 파일 불변. Rebuild는 같은 파일이라도 추출기를 다시 돌림. Start는 폴더에 없는 경로를 목록에서 제거. 검색 화면에 「처음부터 다시 인덱싱」 버튼. `dotnet test` 통과. 버전 0.1.15.
+
+## Current Status / Progress Tracking
+
+- 모드: **Executor** (Word·HWP 스캔 OCR·업데이트 팝업 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 97/97. App 빌드 성공. 버전 0.1.16.
+- **v0.1.16 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.16/DocuLensLocal-win-Setup.exe
+- 글자가 거의 없는 Word/HWP는 큰 그림을 OCR. 글자가 많은 파일은 텍스트만(로고 OCR 생략).
+- 시작 시 새 버전 팝업(확인/나중에). 확인 후 재시작되면 업데이트 내역 팝업.
+- 예전에 인덱싱한 스캔 Word/HWP는 **처음부터 다시 인덱싱** 필요.
+- 사용자 확인: 시작 팝업, 스캔 HWP/Word 검색, 원본 파일 그대로인지. 완료 표시는 사용자 확인 후.
+
+## Background and Motivation (2026-08-20 검색 화면 파일 형식)
+
+사용자: 검색 화면 가운데 「문서」 표시를 PDF, WORD, HWP로 바꿔, 어떤 파일이 가능한지 한눈에 알게 해 달라.
+
+## High-level Task Breakdown (2026-08-20 검색 화면 파일 형식)
+
+### Task G — 빈 검색 화면에 PDF·WORD·HWP
+
+- 성공 기준: IdleHintPanel에 「문서」 한 칸 대신 PDF / WORD / HWP 세 칸. 안내 문구에 지원 형식이 보임. `dotnet test` 통과. 버전 0.1.17.
+
+## Current Status / Progress Tracking (2026-08-20 추가 파일만 인덱싱)
+
+- 모드: **Executor** (새 파일만 인덱싱 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 검색 화면 **새 파일 인덱싱**: 이미 읽은 파일은 건너뛰고 새로 넣거나 바뀐 파일만 읽음.
+- 앱을 켤 때 새 파일이 있으면 자동으로 같은 패스를 돌림.
+- **처음부터 다시 인덱싱**은 전체 재읽기 그대로.
+- `dotnet test` 112/112. 버전 0.1.19.
+- **v0.1.19 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.19/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 폴더에 파일 추가 후 **새 파일 인덱싱** 또는 앱 재실행. 완료 표시는 사용자 확인 후.
+
+## Current Status / Progress Tracking (2026-08-20 폴더 감시 자동 인덱싱)
+
+- 모드: **Executor** (폴더에 넣으면 자동 인덱싱 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 인덱싱이 끝난 폴더를 감시. PDF/Word/한글이 들어오면 약 3초 후 새 파일만 읽음.
+- 검색 중이면 검색어를 지우지 않음. 최초 폴더 선택만으로는 감시하지 않음.
+- `dotnet test` 116/116. 버전 0.1.20.
+- **v0.1.20 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.20/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 앱을 켠 채 폴더에 파일 추가 후 자동으로 읽히는지. 완료 표시는 사용자 확인 후.
+
+## Current Status / Progress Tracking (2026-08-20 업데이트 후 인덱싱 이어서)
+
+- 모드: **Executor** (업데이트 후 인덱싱 이어서 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 인덱싱 시작 시 `IndexingInProgress` 저장. 업데이트 확인 시 인덱싱을 멈추고, 다시 켜면 `Start`로 남은 파일부터 이어서 읽음(이미 본문이 있는 파일은 건너뜀).
+- `dotnet test` 105/105. 버전 0.1.18.
+- **v0.1.18 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.18/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 인덱싱 중 업데이트 → 다시 켠 뒤 남은 파일부터 이어지는지. 완료 표시는 사용자 확인 후.
+
+## Current Status / Progress Tracking (2026-08-20 검색 화면 파일 형식)
+
+- 모드: **Executor** (검색 화면 PDF·WORD·HWP — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- 가운데 「문서」 칸을 빨강 PDF / 파랑 WORD / 틸 HWP 세 칸으로 바꿈.
+- 아래에 「PDF · Word · 한글(HWP) 파일을 찾을 수 있습니다」 안내.
+- `dotnet test` 97/97. App 빌드 성공. 버전 0.1.17.
+- **v0.1.17 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.17/DocuLensLocal-win-Setup.exe
+- 사용자 확인: 검색 화면 가운데에 PDF·WORD·HWP가 보이는지. 완료 표시는 사용자 확인 후.
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-20 (0.1.20 Executor): 인덱싱이 끝난 폴더를 감시. 파일을 넣으면 약 3초 후 **자동으로 새 파일만** 읽음. 설치본 v0.1.20 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (0.1.19 Executor): **새 파일 인덱싱** — 이미 읽은 파일은 건너뛰고 신규·변경만 읽음. 앱 시작 시 새 파일이 있으면 자동. 설치본 v0.1.19 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (0.1.18 Executor): 인덱싱 중 업데이트하면 다시 시작 후 **남은 파일부터 이어서** 읽음. 설치본 v0.1.18 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (0.1.17 Executor): 검색 빈 화면 가운데 「문서」를 **PDF / WORD / HWP** 세 칸으로 바꿈. 설치본 v0.1.17 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+- 2026-08-20 (0.1.15 Executor): 검색 화면에 **처음부터 다시 인덱싱**을 넣음. 검색창 **초기화**는 검색어만 지움(기존). 인덱스 초기화는 원본 문서를 건드리지 않음.
+
+## Background and Motivation (2026-08-20 OCR·업데이트 팝업)
+
+사용자: Word·HWP는 OCR이 안 되면 인덱싱만으로는 의미가 없다. 업데이트가 있으면 팝업 → 확인 시 적용 → 업데이트 내역 팝업.
+
+글자가 들어 있는 Word/HWP는 이미 본문 검색이 된다. 스캔(그림만 있는) 파일은 그림 OCR이 필요하다. 업데이트는 정보 탭 버튼만 있고 확인 창이 없다.
+
+## High-level Task Breakdown (2026-08-20 OCR·업데이트 팝업)
+
+### Task F
+
+- Word/HWP 글자가 거의 없으면 큰 그림을 OCR. 원본 수정 없음.
+- 시작 시 새 버전 팝업(확인/나중에). 확인 시 적용. 재시작 후 내역 팝업.
+- 버전 0.1.16. `dotnet test` 통과.
+
+## Background and Motivation (2026-08-20 추가 파일만 인덱싱)
+
+사용자: 인덱싱한 뒤에 폴더에 파일을 더 넣으면, 새로 넣은 파일만 인덱싱하게 해 달라. 매번 「처음부터 다시 인덱싱」은 할 수 없다.
+
+`Start`는 이미 본문+크기+mtime이 같으면 건너뛰지만, 검색 화면에는 전체 재인덱싱 버튼만 있고, 앱을 다시 켜도 새 파일을 자동으로 읽지 않는다. 본문이 비어 있는 파일은 `Start`를 다시 하면 OCR을 또 돌린다.
+
+## High-level Task Breakdown (2026-08-20 추가 파일만 인덱싱)
+
+### Task I — 새 파일만 인덱싱
+
+- 성공 기준: `IndexPass.NewAndChanged`는 새로 넣거나 바뀐 파일만 추출. 이미 목록에 있고 크기·mtime이 같으면 본문이 없어도 건너뜀. `PlanSync`가 신규/변경/삭제 건수를 알려 줌. 검색 화면 **새 파일 인덱싱** 버튼. 앱을 켤 때 새 파일이 있으면 자동으로 그 패스만 실행. Rebuild는 그대로. `dotnet test` 통과. 버전 0.1.19.
+
+## Background and Motivation (2026-08-20 업데이트 후 인덱싱 이어서)
+
+사용자: 인덱싱하는 과정 중에 업데이트하면, 업데이트가 끝난 뒤 인덱싱을 이어서 할 수 있게 해 달라.
+
+지금은 인덱싱 중 Velopack이 프로세스를 다시 시작하면 `IndexingInProgress`를 기억하지 않는다. 본문이 일부라도 있으면 자동 백필도 돌지 않아, 남은 파일을 이어서 읽지 않는다.
+
+## High-level Task Breakdown (2026-08-20 업데이트 후 인덱싱 이어서)
+
+### Task H — 업데이트 후 남은 파일부터 이어서 인덱싱
+
+- 성공 기준: 인덱싱 시작 시 설정의 `IndexingInProgress=true`. 중단 후 `Start`를 다시 호출하면 이미 본문이 있는 파일은 추출기를 건너뛴다. 앱이 다시 켜지면 폴더가 있을 때 자동으로 `Start`(Rebuild 아님). 업데이트 안내 문구에 「이어서」. `dotnet test` 통과. 버전 0.1.18.
+
+## Background and Motivation (2026-08-20 폴더 감시 자동 인덱싱)
+
+사용자: 추가 파일도 자동으로 인덱싱할 수 있게 해 달라. 버튼을 누르거나 앱을 다시 켜지 않아도 된다.
+
+지금은 앱을 켤 때만 새 파일을 확인하고, 켜 둔 동안 폴더에 넣으면 읽지 않는다.
+
+## High-level Task Breakdown (2026-08-20 폴더 감시 자동 인덱싱)
+
+### Task J — 폴더에 파일이 들어오면 자동으로 읽기
+
+- 성공 기준: 인덱싱이 끝난 폴더를 감시. PDF/Word/한글이 생기거나 바뀌거나 지워지면 잠깐 기다린 뒤 `NewAndChanged`만 실행. 검색 중이면 검색어를 지우지 않음. 폴더만 고른 최초실행은 감시하지 않음. `dotnet test` 통과. 버전 0.1.20.
+
+## Background and Motivation (2026-08-20 Excel 인덱싱·OCR)
+
+사용자: 엑셀이 인덱싱과 OCR이 안 되는 것 같다. 유저스토리에 입각해서 확인하고 수정해 달라.
+
+유저스토리: 계약서·견적·MOU를 파일명만이 아니라 **본문·스캔 OCR**로 찾는다. 견적·계약이 `.xlsx`/`.xls`로 있는 경우가 많다. 기존 코드는 `IndexableFiles`에 Excel이 없어 폴더를 돌아도 건너뛰었다.
+
+NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls는 OpenMcdf SST. 그림이 많고 글자가 거의 없으면 Word와 같은 OCR 임계값(80자)을 쓴다. `.xlsb`는 이번 범위 밖.
+
+## High-level Task Breakdown (2026-08-20 Excel 인덱싱·OCR)
+
+### Task K — Excel 본문 검색·스캔 OCR
+
+- 성공 기준: `.xlsx`/`.xlsm`/`.xls`가 발견·인덱싱된다. 파일명이 달라도 셀 글자(견적·계약)로 검색된다. 글자가 거의 없고 큰 그림이 있으면 OCR. 원본 mtime 유지. `~$` 잠금 파일 제외. 빈 화면에 EXCEL 칸. `dotnet test` 통과. 버전 0.1.21.
+
+## Current Status / Progress Tracking (2026-08-20 Excel 인덱싱·OCR)
+
+- 모드: **Executor** (Excel 본문 검색·OCR — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 125/125. App 빌드 성공. 버전 0.1.21.
+- **v0.1.21 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.21/DocuLensLocal-win-Setup.exe
+- 지원 추가: `.xlsx` / `.xlsm` / `.xls`. 글자가 거의 없으면 `xl/media`·OLE 그림 OCR.
+- 이미 인덱싱한 폴더의 Excel은 **새 파일 인덱싱**(또는 폴더 감시)으로 읽힘. 스캔 그림만 있는 파일은 **처음부터 다시 인덱싱**이 필요할 수 있음.
+- 사용자 확인: 실제 `.xlsx` 견적/계약 본문 검색, 스캔 그림 Excel OCR. 완료 표시는 사용자 확인 후.
+
+## Background and Motivation (2026-08-20 엑셀 추가 시 바로 인덱싱)
+
+사용자: 엑셀 파일을 폴더에 넣으면 바로 새 파일 인덱싱이 되어야 하는데 안 되는 것 같다.
+
+원인: Excel은 저장 시 확장자 없는 임시 파일/`~$` 잠금 파일을 쓴다. 감시 필터가 `*.*`라 임시 파일을 놓치고, `~$`는 무시했다. ZIP은 `FileShare.Read`로 열어서 Excel이 연 파일은 실패 → 빈 본문으로 저장 → 크기·mtime이 같으면 **새 파일 인덱싱**도 다시 안 읽었다.
+
+## High-level Task Breakdown (2026-08-20 엑셀 추가 시 바로 인덱싱)
+
+### Task L — 엑셀을 넣으면 바로 읽기
+
+- 성공 기준: `~$`·`.tmp`·확장자 없는 임시 파일도 감시를 깨운다. xlsx는 Excel이 연 상태에서도 공유 읽기가 된다. 깨진 ZIP은 빈 본문으로 고정하지 않고 다음 패스에서 다시 읽는다. `dotnet test` 통과. 버전 0.1.22.
+
+## Current Status / Progress Tracking (2026-08-20 엑셀 추가 시 바로 인덱싱)
+
+- 모드: **Executor** (엑셀 넣으면 바로 인덱싱 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 127/127. 버전 0.1.22.
+- **v0.1.22 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.22/DocuLensLocal-win-Setup.exe
+- 감시 필터 `*`, `~$`/`.tmp`도 동기화 시작. ZIP은 `FileShare.ReadWrite`. 깨진 ZIP은 목록에 고정하지 않음.
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-20 (Planner): 사용자 「확인완료」. 인덱싱 대상 폴더가 `계약서_스캔`이라 상위 `인수인계`의 xlsx/hwp는 범위 밖이었음.
+- 2026-08-20 (0.1.22 Executor): 엑셀을 폴더에 넣어도 바로 안 읽히던 원인 — 임시/`~$` 감시 누락 + ZIP 배타 열기. 설치본 v0.1.22 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+
+## Background and Motivation (2026-08-20 엑셀·HWP 인덱싱 재확인)
+
+사용자: 인덱싱이 안 되니 다시 확인하고, HWP도 되는지 확인해 달라.
+
+원인: 엑셀·한글을 한 번 빈 본문(`filename_only`)으로 저장하면 `NewAndChanged`가 크기·mtime이 같다고 건너뛴다. 앱을 업데이트해도, **새 파일 인덱싱**을 눌러도 다시 안 읽는다. HWP 추출은 예외를 삼켜 빈 본문으로 남겼다.
+
+## High-level Task Breakdown (2026-08-20 엑셀·HWP 인덱싱 재확인)
+
+### Task M — 빈 본문 엑셀·한글 다시 읽기
+
+- 성공 기준: 본문이 비어 있는 xlsx/hwp는 증분 패스에서 다시 추출. 빈 PDF는 반복 OCR하지 않음. HWP/HWPX는 한글이 연 상태에서도 공유 읽기. `dotnet test` 통과. 버전 0.1.23.
+
+## Current Status / Progress Tracking (2026-08-20 엑셀·HWP 인덱싱 재확인)
+
+- 모드: **Executor** (엑셀·HWP 다시 읽기 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 131/131. 버전 0.1.23.
+- **v0.1.23 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.23/DocuLensLocal-win-Setup.exe
+- **Planner 2026-08-20:** 사용자 확인 완료. 엑셀·한글이 안 읽히던 직접 원인은 선택한 폴더가 `인수인계\계약서_스캔`이고, 파일은 상위 `인수인계`에 있었음. 폴더 변경으로 해결.
+
+
+## Background and Motivation (2026-08-22 확장자별 검색)
+
+사용자: 키워드 검색은 모든 종류가 섞여 나온다. 가운데 PDF / WORD / HWP / EXCEL 마크를 버튼처럼 눌러, 그 종류만 검색하고 싶다.
+
+## High-level Task Breakdown (2026-08-22 확장자별 검색)
+
+### Task N — 확장자 버튼으로 검색 필터
+
+- 성공 기준: PDF→`.pdf`, WORD→`.docx`/`.doc`, HWP→`.hwp`/`.hwpx`, EXCEL→`.xlsx`/`.xlsm`/`.xls`. 다시 누르면 전체. 검색창 아래 버튼이 결과 화면에서도 보임. `dotnet test` 통과. 버전 0.1.24.
+
+## Current Status / Progress Tracking (2026-08-22 확장자별 검색)
+
+- 모드: **Executor** (확장자 필터 — 사용자 확인 전 완료 표시 금지)
+- 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 147 통과 (감시 타이밍 테스트 1건은 재실행 시 통과). 버전 0.1.24.
+- **v0.1.24 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.24/DocuLensLocal-win-Setup.exe
+- PR: https://github.com/boam79/DocuLensLocal/pull/3
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-22 (0.1.24 Executor): 검색창 아래 PDF/WORD/HWP/EXCEL을 눌러 그 종류만 검색. 같은 칸을 다시 누르면 전체. 설치본 v0.1.24 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
+- 2026-08-22 (확장자 검색 Executor): 가운데 형식 마크를 토글 버튼으로 바꿔, 선택한 확장자만 검색되게 구현 중.
+- 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
+
+## Background and Motivation (2026-08-22 고도화 제안)
+
+사용자: 프런트 디자인과 기능 고도화 제안을 해 달라. 구현 지시 없음. **Planner**만.
+
+제품 전제 유지: 원문은 PC 밖으로 안 보냄, 원본 읽기만, 폴더 하나 중심의 계약/인수인계 검색, 비기술 사용자, Mac 설치본 없음.
+
+## Key Challenges and Analysis (2026-08-22 고도화 제안)
+
+이미 되는 것: 파일명+본문+OCR, 확장자 필터, 자동 감시, 업데이트. 빈틈은 「찾기」보다 「찾고 나서 이해하고 열기」.
+
+실제 사용에서 드러난 점:
+- 폴더 경로가 화면 맨 아래 회색이라, 상위 폴더 파일을 못 찾는 원인을 사용자가 못 봄.
+- 결과는 더블클릭으로만 열림. 열기 버튼이 없음.
+- 근거 문장에 검색어가 굵게 안 들어감.
+- 아래쪽 「폴더 변경 / 새 파일 인덱싱 / 처음부터 다시 인덱싱」이 비슷해 보임.
+- 결과 종류 칸은 전부 같은 틸 색. 빈 화면 PDF(빨강)/WORD(파랑)과 불일치.
+- 폴더는 하나뿐. 날짜·최근 검색·여러 종류 동시 선택은 없음.
+
+하지 말 것: 문서를 서버/AI로 보내는 기능, 복잡한 설정 화면, Mac 설치본, 미리보기 OCR 뷰어(큼).
+
+## High-level Task Breakdown (2026-08-22 고도화 제안) — 아직 착수 금지
+
+우선순위는 사용자가 고른 뒤 Executor가 한 장씩.
+
+### P0 — 검색 결과를 더 읽기 쉽게 (추천 다음 장)
+
+- 근거 문장에서 검색어 강조, 한 번 클릭 **열기**, 종류 칸 색을 PDF/WORD/HWP/EXCEL과 맞춤, 긴 경로 대신 상위 폴더명, 「폴더에서 보기」.
+- 성공 기준: 더블클릭 없이도 파일을 열고, 왜 맞았는지 한눈에 보임.
+
+### P1 — 화면을 검색 도구처럼
+
+- 아래 3버튼을 「폴더」 한 줄로 정리. 다시 인덱싱은 확인 후. 폴더 경로를 제목 근처로. 최초실행은 「이 폴더 읽기」 한 버튼. 인덱싱 진행 막대.
+
+### P2 — 찾기 조건
+
+- 종류 여러 개 동시(PDF+HWP). 날짜(올해/최근 1년). 최근 검색어. 결과 건수. Enter로 첫 결과 열기.
+
+### P3 — 나중
+
+- 여러 폴더, 페이지 번호, 트레이 아이콘, 다크 모드. 클라우드 검색/요약은 제품 약속과 충돌하므로 제외.
+
+## Current Status / Progress Tracking (2026-08-22 고도화 제안)
+
+- 모드: **Executor** (종류 여러 개 선택 — 사용자 확인 전 완료 표시 금지)
+- 범위: PDF/WORD/HWP/EXCEL을 여러 개 동시에 눌러 그 종류들만 검색. P1·날짜 필터는 하지 않음.
+- `dotnet test` 169 통과. 버전 0.1.26.
+- **v0.1.26 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.26/DocuLensLocal-win-Setup.exe
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-22 (Planner): 프런트 UI/UX 제안. 구현 없음. 문서 `docs/ui-ux-제안.md`. 추천은 검색 화면 1안(작은 종류 알약·폴더 경로 위·아래 버튼 정리).
+- 2026-08-22 (문서 Executor): GitHub `docs/`에 사용 안내·검색·인덱싱·설치·FAQ·구조·개발·고도화·이력을 넣음. 앱 버전은 0.1.26 유지(설치본 없음).
+- 2026-08-22 (0.1.26 Executor): 종류 버튼을 여러 개 함께 선택. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
+- 2026-08-22 (0.1.25 Executor): 검색 결과 P0. 검색어 굵게, 열기/폴더에서 보기, 종류 색, 상위 폴더·날짜. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
+- 2026-08-22 (0.1.27 Executor): **1안만** 진행. 검색 화면을 도구처럼 정리. 종류 알약, 폴더 경로를 제목 아래(클릭 시 탐색기), 아래 세 버튼을 **폴더** 메뉴로, 다시 읽기는 확인 후, 검색 후 건수, 짧은 커버리지 칩. 2·3·4안은 하지 않음. `dotnet test` 175 통과. **v0.1.27 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.27/DocuLensLocal-win-Setup.exe
+
+## Current Status / Progress Tracking (2026-08-22 1안)
+
+- (outdated) 검색 1안 이후 상태는 아래 **정보 1안** 절을 보세요.
+
+## Background and Motivation (2026-08-22 정보 탭)
+
+사용자: 0.1.27 **정보** 탭 스크린샷을 보고 디자인 제안을 요청. Planner만. 구현 없음.
+
+원인: 정보 탭이 제품명+버전 이력+업데이트뿐이라, 매일 「이 폴더·몇 건」을 확인하는 화면이 아님. 검색 탭 커버리지 칩을 짧게 줄인 뒤 자세한 숫자의 자리가 없음.
+
+## Key Challenges and Analysis (정보 탭)
+
+- 비기술 사용자. GitHub·LOCALAPPDATA·설정 화면은 넣지 않음.
+- 검색 탭과 폴더 경로가 겹쳐도, 정보 탭은 「상태 확인」용으로 한 번 더 보여 주는 편이 낫다.
+- 버전 이력 27줄은 매일 필요가 없음. 최근 5개 + 펼치기면 충분.
+- 업데이트 큰 버튼은 유지. 캡션만 쉽게.
+
+## High-level Task Breakdown (정보 탭, 미승인)
+
+정보 1안(추천): 상태 카드(폴더·건수·본문/OCR) + 팁 세 줄 + 이력 최근 5개 + 업데이트 문구 변경.
+정보 2안: 업데이트 중심, 이력은 숨김.
+정보 3안: 문구·이력 길이만.
+
+사용자 선택 후 Executor. 지금은 Planner 제안만.
+
+- 2026-08-22 (0.1.28 Executor): **정보 1안만** 진행. 상태 카드(폴더·건수·본문/OCR·팁), 이력 최근 5개 + 이전 버전, 업데이트 문구. 정보 2·3안은 하지 않음. `dotnet test` 183 통과. **v0.1.28 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.28/DocuLensLocal-win-Setup.exe
+
+## Current Status / Progress Tracking (2026-08-22 정보 1안)
+
+- 모드: **Executor** (정보 탭 1안 — 사용자 확인 전 완료 표시 금지)
+- 범위: 정보 1안만. 정보 2·3안, 검색 2·3안은 제외.
+- `dotnet test` 183 통과. 버전 0.1.28.
+- **v0.1.28 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.28/DocuLensLocal-win-Setup.exe
+
+- 2026-08-22 (0.1.29 Executor): 새 버전이 있으면 팝업에 버전·짧은 내역. Setup.exe로 올린 뒤에도 내역 팝업. `dotnet test` 188 통과. **v0.1.29 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.29/DocuLensLocal-win-Setup.exe
+
+## Current Status / Progress Tracking (2026-08-22 업데이트 팝업)
+
+- 모드: **Executor** (업데이트 항목 팝업 — 사용자 확인 전 완료 표시 금지)
+- `dotnet test` 188 통과. 버전 0.1.29.
+- **v0.1.29 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.29/DocuLensLocal-win-Setup.exe
+
+## Background and Motivation (2026-08-22 보안)
+
+사용자: 보안에 대한 제안을 요청. Planner만. 구현 없음.
+
+이미 지키는 것: 원문 비송신, 원본 읽기만, HTTPS GitHub 업데이트, 검색 파라미터, 매크로 미실행(열기는 셸).
+
+남은 실제 이슈: 정보 탭에 약속이 안 보임, 설치 파일 미서명, index.db에 본문 평문, 열기는 엑셀/워드.
+
+## High-level Task Breakdown (보안, 미승인)
+
+보안 1안(추천): 정보 탭 한 줄 + 매크로 가능 파일 열 때 안내.
+보안 2안: Authenticode 서명. 인증서 구매 필요.
+보안 3안: index.db를 Windows 계정 DPAPI/SQLCipher로 잠금.
+
+사용자 선택 후 Executor.
+
+
+
 

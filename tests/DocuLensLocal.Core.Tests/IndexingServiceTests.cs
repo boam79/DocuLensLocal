@@ -161,6 +161,41 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task start_after_cancel_skips_files_already_extracted_and_finishes_the_rest()
+    {
+        for (var i = 0; i < 8; i++)
+        {
+            WriteStubPdf(_pdfRoot, $"file-{i}.pdf");
+        }
+
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        using var cts = new CancellationTokenSource();
+        var progress = new SynchronousProgress<IndexingProgress>(p =>
+        {
+            if (p.ProcessedCount >= 2)
+            {
+                cts.Cancel();
+            }
+        });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => service.Start(_pdfRoot, progress, cts.Token));
+
+        var storedAfterCancel = service.GetIndexedDocuments().Count;
+        Assert.InRange(storedAfterCancel, 2, 7);
+        Assert.Equal(storedAfterCancel, extractor.Calls);
+
+        var result = await service.Start(_pdfRoot);
+
+        Assert.True(result.IsCompleted);
+        Assert.Equal(8, result.FoundCount);
+        Assert.Equal(8, service.GetIndexedDocuments().Count);
+        Assert.Equal(8, extractor.Calls);
+        Assert.All(service.GetIndexedDocuments(), doc => Assert.Equal("본문 계약 조항", doc.BodyText));
+    }
+
+    [Fact]
     public async Task empty_folder_completes_with_zero_documents()
     {
         var service = new IndexingService(_userData);
@@ -244,6 +279,194 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task coverage_treats_stub_pdfs_as_filename_only_so_backfill_can_run()
+    {
+        WriteStubPdf(_pdfRoot, "empty-body.pdf");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_pdfRoot);
+
+        var coverage = service.GetCoverage();
+        Assert.Equal(1, coverage.DocumentCount);
+        Assert.Equal(0, coverage.BodyCount);
+        Assert.True(IndexBackfillPolicy.ShouldBackfill(coverage, _pdfRoot));
+    }
+
+    [Fact]
+    public async Task skips_extractor_when_size_mtime_and_body_are_unchanged()
+    {
+        WriteStubPdf(_pdfRoot, "keep.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+
+        await service.Start(_pdfRoot);
+        await service.Start(_pdfRoot);
+
+        Assert.Equal(1, extractor.Calls);
+        Assert.Equal("본문 계약 조항", Assert.Single(service.GetIndexedDocuments()).BodyText);
+    }
+
+    [Fact]
+    public async Task clear_index_removes_search_rows_but_not_original_files()
+    {
+        var path = WriteStubPdf(_pdfRoot, "keep-me.pdf");
+        var originalBytes = File.ReadAllBytes(path);
+        var originalMtime = File.GetLastWriteTimeUtc(path);
+        var extractor = new CountingExtractor("본문 계약");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Single(service.Search("계약"));
+
+        var removed = service.ClearIndex();
+
+        Assert.Equal(1, removed);
+        Assert.Empty(service.GetIndexedDocuments());
+        Assert.Empty(service.Search("계약"));
+        Assert.Equal(0, service.GetCoverage().DocumentCount);
+        Assert.Equal(originalBytes, File.ReadAllBytes(path));
+        Assert.Equal(originalMtime, File.GetLastWriteTimeUtc(path));
+    }
+
+    [Fact]
+    public async Task rebuild_clears_then_reextracts_unchanged_files()
+    {
+        WriteStubPdf(_pdfRoot, "keep.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+
+        var result = await service.Rebuild(_pdfRoot);
+
+        Assert.Equal(2, extractor.Calls);
+        Assert.True(result.IsCompleted);
+        Assert.Equal(1, result.FoundCount);
+        Assert.Equal("본문 계약 조항", Assert.Single(service.GetIndexedDocuments()).BodyText);
+        Assert.Single(service.Search("계약"));
+    }
+
+    [Fact]
+    public async Task incremental_pass_indexes_only_newly_added_files()
+    {
+        WriteStubPdf(_pdfRoot, "already.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal(1, extractor.Calls);
+
+        WriteStubPdf(_pdfRoot, "added.pdf");
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.Equal(1, plan.NewCount);
+        Assert.Equal(0, plan.ChangedCount);
+        Assert.True(plan.NeedsWork);
+
+        var result = await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.True(result.IsCompleted);
+        Assert.Equal(2, result.FoundCount);
+        Assert.Equal(2, extractor.Calls);
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+        Assert.Contains(service.GetIndexedDocuments(), doc => doc.FilePath.Contains("added.pdf", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task incremental_pass_skips_unchanged_files_even_without_body()
+    {
+        WriteStubPdf(_pdfRoot, "scan.pdf");
+        var extractor = new CountingExtractor("");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal(1, extractor.Calls);
+
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.False(plan.NeedsWork);
+
+        await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Equal(1, extractor.Calls);
+        Assert.Single(service.GetIndexedDocuments());
+    }
+
+    [Fact]
+    public async Task incremental_pass_rereads_empty_xlsx_body()
+    {
+        TestOfficeFactory.WriteXlsx(_pdfRoot, "견적.xlsx", "본 버스 광고 계약");
+        var extractor = new QueueExtractor("", "본 버스 광고 계약");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal("", Assert.Single(service.GetIndexedDocuments()).BodyText);
+        Assert.Equal(1, extractor.Calls);
+
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.Equal(1, plan.ChangedCount);
+        Assert.True(plan.NeedsWork);
+
+        await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Equal(2, extractor.Calls);
+        var stored = Assert.Single(service.GetIndexedDocuments());
+        Assert.Contains("버스 광고", stored.BodyText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task incremental_pass_reextracts_when_file_contents_change()
+    {
+        var path = WriteStubPdf(_pdfRoot, "changed.pdf");
+        var extractor = new CountingExtractor("본문 계약 조항");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+        Assert.Equal(1, extractor.Calls);
+
+        File.WriteAllText(path, "%PDF-1.4 stub for indexing tests\n% bigger\n");
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(2));
+
+        var plan = service.PlanSync(_pdfRoot);
+        Assert.Equal(1, plan.ChangedCount);
+        Assert.True(plan.NeedsWork);
+
+        await service.Start(_pdfRoot, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+
+        Assert.Equal(2, extractor.Calls);
+    }
+
+    [Fact]
+    public async Task start_drops_documents_that_are_no_longer_in_the_folder()
+    {
+        WriteStubPdf(_pdfRoot, "keep.pdf");
+        var gone = WriteStubPdf(_pdfRoot, "gone.pdf");
+        var service = new IndexingService(_userData, new CountingExtractor("본문"));
+        await service.Start(_pdfRoot);
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+
+        File.Delete(gone);
+        await service.Start(_pdfRoot);
+
+        var remaining = Assert.Single(service.GetIndexedDocuments());
+        Assert.Contains("keep.pdf", remaining.FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void clear_index_is_safe_when_database_is_missing()
+    {
+        var service = new IndexingService(_userData);
+        Assert.Equal(0, service.ClearIndex());
+        Assert.Empty(service.GetIndexedDocuments());
+    }
+
+    [Fact]
+    public async Task reextracts_when_previous_body_was_empty()
+    {
+        WriteStubPdf(_pdfRoot, "scan-later.pdf");
+        await new IndexingService(_userData, new CountingExtractor("")).Start(_pdfRoot);
+
+        var extractor = new CountingExtractor("OCR 이후에 생긴 본문");
+        var service = new IndexingService(_userData, extractor);
+        await service.Start(_pdfRoot);
+
+        Assert.Equal(1, extractor.Calls);
+        Assert.Equal("OCR 이후에 생긴 본문", Assert.Single(service.GetIndexedDocuments()).BodyText);
+    }
+
+    [Fact]
     public async Task concatenated_bus_ad_query_matches_split_filenames()
     {
         WriteStubPdf(_pdfRoot, "버스일정.pdf");
@@ -273,6 +496,37 @@ public class IndexingServiceTests : IDisposable
         var path = Path.Combine(directory, fileName);
         File.WriteAllText(path, "%PDF-1.4 stub for indexing tests\n");
         return path;
+    }
+
+    private sealed class CountingExtractor : IPdfContentExtractor
+    {
+        private readonly string _body;
+
+        public CountingExtractor(string body) => _body = body;
+
+        public int Calls { get; private set; }
+
+        public PdfExtractedContent Extract(string pdfPath, CancellationToken cancellationToken)
+        {
+            Calls++;
+            return new(_body, PageCount: 1, OcrPageCount: 0, [new PdfPageContent(1, _body, "")]);
+        }
+    }
+
+    private sealed class QueueExtractor : IPdfContentExtractor
+    {
+        private readonly Queue<string> _bodies;
+
+        public QueueExtractor(params string[] bodies) => _bodies = new Queue<string>(bodies);
+
+        public int Calls { get; private set; }
+
+        public PdfExtractedContent Extract(string pdfPath, CancellationToken cancellationToken)
+        {
+            Calls++;
+            var body = _bodies.Count > 0 ? _bodies.Dequeue() : string.Empty;
+            return new(body, PageCount: 1, OcrPageCount: 0, [new PdfPageContent(1, body, "")]);
+        }
     }
 
     private static IndexingProgress Clone(IndexingProgress progress) => new()

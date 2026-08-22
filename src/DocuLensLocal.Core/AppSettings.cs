@@ -19,4 +19,14 @@ public sealed class AppSettings
 
     /// <summary>True after IndexingService.Start completed, including 0-file folders.</summary>
     public bool IndexCompleted { get; set; }
+
+    public string? PendingUpdateVersion { get; set; }
+
+    public string? PendingUpdateNotes { get; set; }
+
+    /// <summary>Last app version that finished starting, used to show update notes after Setup.exe upgrades.</summary>
+    public string? LastRunVersion { get; set; }
+
+    /// <summary>True while Start/Rebuild is running, so an update restart can continue leftover files.</summary>
+    public bool IndexingInProgress { get; set; }
 }

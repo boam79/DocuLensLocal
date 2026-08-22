@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -5,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using DocuLensLocal.Core;
 
 namespace DocuLensLocal.App;
@@ -14,8 +16,16 @@ public partial class MainWindow : Window
     private readonly IndexingService _indexing = new();
     private readonly AppUpdater _updater = new();
     private readonly IUpdateFeed _updateFeed;
+    private CancellationTokenSource? _indexCts;
+    private Task? _indexingTask;
     private bool _isIndexing;
     private bool _showMainSearch;
+    private bool _searchSubmitted;
+    private bool _resumeIndexingAfterUpdate;
+    private bool _pendingWatchSync;
+    private int _watchRetryCount;
+    private SearchFormatFilter _formatFilter = SearchFormatFilter.All;
+    private readonly FolderIndexWatch _folderWatch;
 
     public MainWindow()
         : this(new VelopackUpdateFeed())
@@ -26,32 +36,191 @@ public partial class MainWindow : Window
     {
         _updateFeed = updateFeed;
         InitializeComponent();
+        ApplyFormatFilterVisuals();
+        _folderWatch = new FolderIndexWatch(IndexWatchPolicy.Debounce, () =>
+        {
+            Dispatcher.UIThread.Post(() => _ = TryWatchSyncAsync());
+        });
         LoadInfoPanel();
         ApplyStartupView();
+        Opened += OnOpened;
+        Closed += OnWindowClosed;
+    }
+
+    private async void OnOpened(object? sender, EventArgs e)
+    {
+        Opened -= OnOpened;
+        try
+        {
+            await TryShowPendingUpdateNotesAsync().ConfigureAwait(true);
+            await TryPromptForUpdateAsync().ConfigureAwait(true);
+            await TryResumeOrBackfillIndexingAsync().ConfigureAwait(true);
+            RefreshFolderWatch();
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"시작하지 못했습니다: {ex.Message}";
+        }
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        Closed -= OnWindowClosed;
+        _folderWatch.Dispose();
+    }
+
+    private async Task TryShowPendingUpdateNotesAsync()
+    {
+        var settings = LoadSettings();
+        var current = CurrentDisplayVersion();
+        var notes = UpdateNotesPolicy.StartupNotes(settings.PendingUpdateNotes, settings.LastRunVersion, current);
+        settings.PendingUpdateNotes = null;
+        settings.PendingUpdateVersion = null;
+        settings.LastRunVersion = current;
+        SaveSettings(settings);
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return;
+        }
+
+        await MessageDialog.AlertAsync(this, UpdatePromptCopy.NotesTitle, notes).ConfigureAwait(true);
+    }
+
+    private async Task TryPromptForUpdateAsync()
+    {
+        var result = await _updater.CheckAsync(_updateFeed).ConfigureAwait(true);
+        if (result.Status == AppUpdateStatus.Available && !string.IsNullOrWhiteSpace(result.NewerVersion))
+        {
+            var confirm = await MessageDialog.ConfirmAsync(
+                this,
+                UpdatePromptCopy.AvailableTitle,
+                AvailableUpdatePrompt(result.NewerVersion)).ConfigureAwait(true);
+            if (!confirm)
+            {
+                return;
+            }
+
+            await ApplyConfirmedUpdateAsync(result.NewerVersion).ConfigureAwait(true);
+            return;
+        }
+
+        if (result.Status == AppUpdateStatus.NotPackaged && !string.IsNullOrWhiteSpace(result.NewerVersion))
+        {
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, AvailableInstallBuildPrompt(result.NewerVersion)).ConfigureAwait(true);
+        }
+    }
+
+    private string AvailableUpdatePrompt(string newerVersion) =>
+        UpdateNotesPolicy.AvailablePrompt(CurrentDisplayVersion(), newerVersion, IndexingWouldResume());
+
+    private string AvailableInstallBuildPrompt(string newerVersion) =>
+        UpdatePromptCopy.InstallBuildOnly(newerVersion)
+        + "\n\n"
+        + ReleaseHistory.FormatNotes(CurrentDisplayVersion(), newerVersion);
+
+    private async Task ApplyConfirmedUpdateAsync(string version)
+    {
+        CancelIndexingForUpdate();
+        var running = _indexingTask;
+        if (running is not null)
+        {
+            try
+            {
+                await running.ConfigureAwait(true);
+            }
+            catch (Exception)
+            {
+                // Indexing stopped so the update can replace files. Resume after restart.
+            }
+        }
+
+        var settings = LoadSettings();
+        if (_resumeIndexingAfterUpdate || settings.IndexingInProgress)
+        {
+            IndexingRunState.OnStarted(settings);
+        }
+        settings.PendingUpdateVersion = version;
+        settings.PendingUpdateNotes = ReleaseHistory.FormatNotes(CurrentDisplayVersion(), version);
+        SaveSettings(settings);
+        var applied = await _updater.ApplyAsync(_updateFeed, version).ConfigureAwait(true);
+        UpdateStatusText.Text = applied.MessageKo;
+        if (applied.Status != AppUpdateStatus.Applied)
+        {
+            settings.PendingUpdateNotes = null;
+            settings.PendingUpdateVersion = null;
+            SaveSettings(settings);
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, applied.MessageKo).ConfigureAwait(true);
+            if (!_isIndexing && IndexResumePolicy.ShouldResume(LoadSettings()))
+            {
+                await TryResumeOrBackfillIndexingAsync().ConfigureAwait(true);
+            }
+        }
+    }
+
+    private bool IndexingWouldResume()
+    {
+        var settings = LoadSettings();
+        return _isIndexing || _resumeIndexingAfterUpdate || IndexResumePolicy.ShouldResume(settings);
+    }
+
+    private void CancelIndexingForUpdate()
+    {
+        if (_isIndexing)
+        {
+            _resumeIndexingAfterUpdate = true;
+            var settings = LoadSettings();
+            IndexingRunState.OnStarted(settings);
+            SaveSettings(settings);
+        }
+
+        _indexCts?.Cancel();
+    }
+
+    private static string CurrentDisplayVersion()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        return AppVersionFormatter.DisplayVersion(
+            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+            assembly.GetName().Version);
     }
 
     private void LoadInfoPanel()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product
-            ?? "DocuLens Local";
         var version = AppVersionFormatter.DisplayVersion(
             assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
             assembly.GetName().Version);
 
-        ProductNameText.Text = product;
+        ProductNameText.Text = InfoStatusCopy.Headline;
         VersionText.Text = $"버전 {version}";
-        var notes = ReleaseHistory.Known;
-        VersionHistoryList.ItemsSource = notes
-            .Select((note, i) => new HistoryRow
-            {
-                Version = note.Version,
-                SummaryKo = note.SummaryKo,
-                IsCurrent = i == 0,
-                IsLast = i == notes.Count - 1,
-            })
-            .ToList();
+        VersionHistoryList.ItemsSource = HistoryRows(ReleaseHistory.Recent(), markCurrent: true);
+        var older = ReleaseHistory.Older();
+        OlderVersionHistoryList.ItemsSource = HistoryRows(older, markCurrent: false);
+        OlderHistoryExpander.IsVisible = older.Count > 0;
+        RefreshInfoPanel();
     }
+
+    private void RefreshInfoPanel()
+    {
+        var folder = LoadSettings().IndexFolder;
+        InfoFolderPathText.Text = InfoStatusCopy.FolderLine(folder);
+        var canOpen = !string.IsNullOrWhiteSpace(folder);
+        InfoFolderButton.IsEnabled = canOpen;
+        ToolTip.SetTip(InfoFolderButton, canOpen ? folder : null);
+        var coverage = CoverageOf(_indexing.GetIndexedDocuments());
+        InfoDocumentCountText.Text = InfoStatusCopy.DocumentCount(coverage);
+        InfoBodyCountText.Text = InfoStatusCopy.BodyLabel(coverage);
+        InfoOcrCountText.Text = InfoStatusCopy.OcrLabel(coverage);
+    }
+
+    private static List<HistoryRow> HistoryRows(IReadOnlyList<ReleaseNote> notes, bool markCurrent) =>
+        notes.Select((note, i) => new HistoryRow
+        {
+            Version = note.Version,
+            SummaryKo = note.SummaryKo,
+            IsCurrent = markCurrent && i == 0,
+            IsLast = i == notes.Count - 1,
+        }).ToList();
 
     private void ApplyStartupView()
     {
@@ -79,6 +248,7 @@ public partial class MainWindow : Window
         {
             FirstRunPanel.IsVisible = false;
             SearchPanel.IsVisible = false;
+            RefreshInfoPanel();
             return;
         }
 
@@ -108,9 +278,18 @@ public partial class MainWindow : Window
         if (resetSearch)
         {
             SearchQueryBox.Text = string.Empty;
+            _searchSubmitted = false;
         }
 
-        RunSearch();
+        if (_searchSubmitted)
+        {
+            RunSearch();
+        }
+        else
+        {
+            ShowIdleSearch();
+        }
+
         if (resetSearch)
         {
             SearchQueryBox.Focus();
@@ -132,6 +311,13 @@ public partial class MainWindow : Window
             && !string.IsNullOrWhiteSpace(folder)
             && Directory.Exists(folder);
         SelectFolderButton.IsEnabled = !_isIndexing;
+        FolderMenuButton.IsEnabled = !_isIndexing;
+        ChangeFolderMenuItem.IsEnabled = !_isIndexing;
+        var folderReady = !_isIndexing
+            && !string.IsNullOrWhiteSpace(folder)
+            && Directory.Exists(folder);
+        SyncIndexMenuItem.IsEnabled = folderReady;
+        RebuildIndexMenuItem.IsEnabled = folderReady;
     }
 
     private async void SelectFolderButton_OnClick(object? sender, RoutedEventArgs e)
@@ -152,6 +338,7 @@ public partial class MainWindow : Window
         var settings = LoadSettings();
         settings.IndexFolder = path;
         SaveSettings(settings);
+        _folderWatch.Stop();
         ShowSavedFolder();
         UpdateIndexButtonState();
         IndexStatusText.Text = "폴더를 선택했습니다. 인덱싱을 누르면 시작합니다.";
@@ -174,13 +361,24 @@ public partial class MainWindow : Window
         IndexStatusText.Text = "인덱싱 중…";
         IndexCountText.Text = "건수: 0 / —";
         IndexCurrentFileText.Text = "현재 파일: —";
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
 
         var progress = new Progress<IndexingProgress>(ShowProgress);
 
         try
         {
-            var result = await _indexing.Start(folder, progress, CancellationToken.None).ConfigureAwait(true);
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+            var indexing = _indexing.Start(folder, progress, IndexingToken());
+            _indexingTask = indexing;
+            var result = await indexing.ConfigureAwait(true);
             ShowResult(result);
+        }
+        catch (OperationCanceledException)
+        {
+            IndexStatusText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "인덱싱을 잠시 멈췄습니다. 다시 켜면 남은 파일부터 이어서 읽습니다.";
         }
         catch (Exception ex)
         {
@@ -188,8 +386,10 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _indexingTask = null;
             _isIndexing = false;
             UpdateIndexButtonState();
+            RefreshFolderWatch();
         }
     }
 
@@ -214,14 +414,69 @@ public partial class MainWindow : Window
         }
 
         var settings = LoadSettings();
-        settings.IndexCompleted = true;
+        IndexingRunState.OnFinished(settings, completed: true);
         SaveSettings(settings);
         _showMainSearch = true;
         SearchTab.IsChecked = true;
         ShowMainSearch(resetSearch: true);
+        RefreshFolderWatch();
     }
 
     private void SearchButton_OnClick(object? sender, RoutedEventArgs e) => RunSearch();
+
+    private void ResetSearchButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        SearchQueryBox.Text = string.Empty;
+        _searchSubmitted = false;
+        ShowIdleSearch();
+        SearchQueryBox.Focus();
+    }
+
+    private void ExampleChip_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not string query || string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+
+        SearchQueryBox.Text = query;
+        RunSearch();
+    }
+
+    private void FormatFilterButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button
+            || button.Tag is not string tag
+            || !Enum.TryParse(tag, ignoreCase: true, out SearchFormatFilter clicked)
+            || clicked == SearchFormatFilter.All)
+        {
+            return;
+        }
+
+        _formatFilter = SearchFormatFilters.Toggle(_formatFilter, clicked);
+        ApplyFormatFilterVisuals();
+        if (_searchSubmitted)
+        {
+            RunSearch();
+        }
+    }
+
+    private void ApplyFormatFilterVisuals()
+    {
+        SetFormatSelected(PdfFormatButton, SearchFormatFilter.Pdf);
+        SetFormatSelected(WordFormatButton, SearchFormatFilter.Word);
+        SetFormatSelected(HangulFormatButton, SearchFormatFilter.Hangul);
+        SetFormatSelected(ExcelFormatButton, SearchFormatFilter.Excel);
+        FormatFilterHintText.Text = SearchFormatFilters.Hint(_formatFilter);
+        FormatFilterHintText.IsVisible = _formatFilter != SearchFormatFilter.All;
+    }
+
+    private void SetFormatSelected(Button button, SearchFormatFilter format)
+    {
+        var selected = SearchFormatFilters.Includes(_formatFilter, format);
+        button.Classes.Set("selected", selected);
+        button.Opacity = _formatFilter != SearchFormatFilter.All && !selected ? 0.45 : 1;
+    }
 
     private void SearchQueryBox_OnKeyDown(object? sender, KeyEventArgs e)
     {
@@ -234,10 +489,226 @@ public partial class MainWindow : Window
 
     private void ChangeFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
+        _folderWatch.Stop();
         _showMainSearch = false;
         SearchTab.IsChecked = true;
         ShowFirstRun();
-        IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 다시 시작합니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+        IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 그 폴더로 목록을 맞춥니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+    }
+
+    private void IndexedFolderButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = LoadSettings().IndexFolder;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", "폴더가 없거나 옮겨졌습니다. 「폴더」에서 폴더를 바꿔 보세요.");
+            return;
+        }
+
+        try
+        {
+            Process.Start(LocalFileActions.Open(folder));
+        }
+        catch (Exception ex)
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", ex.Message);
+        }
+    }
+
+    private async void SyncIndexButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = LoadSettings().IndexFolder;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            _showMainSearch = false;
+            SearchTab.IsChecked = true;
+            ShowFirstRun();
+            IndexStatusText.Text = "폴더를 먼저 선택한 뒤 인덱싱하세요.";
+            return;
+        }
+
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        var plan = _indexing.PlanSync(folder);
+        if (!plan.NeedsWork)
+        {
+            _showMainSearch = true;
+            SearchTab.IsChecked = true;
+            ShowMainSearch(resetSearch: false);
+            IdleHintText.Text = "새로 넣은 파일이 없습니다. 이미 읽은 파일은 그대로 둡니다.";
+            return;
+        }
+
+        await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
+    }
+
+    private async Task RunIndexingPassAsync(string folder, IndexPass pass, string startMessage, bool preserveSearch = false)
+    {
+        if (_isIndexing)
+        {
+            _pendingWatchSync = true;
+            return;
+        }
+
+        _isIndexing = true;
+        UpdateIndexButtonState();
+        if (!preserveSearch)
+        {
+            _searchSubmitted = false;
+            SearchQueryBox.Text = string.Empty;
+            SearchResultsList.ItemsSource = null;
+            ApplySearchListMode(SearchListMode.Idle);
+            IdleHintText.Text = pass == IndexPass.NewAndChanged
+                ? "이미 읽은 파일은 그대로 두고, 새로 넣거나 바뀐 파일만 읽습니다."
+                : "파일명이나 본문 단어로 찾아 보세요";
+        }
+
+        IndexedSummaryText.Text = startMessage;
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
+
+        var progress = new Progress<IndexingProgress>(snapshot =>
+        {
+            IndexedSummaryText.Text = pass == IndexPass.NewAndChanged
+                ? SearchStatusFormatter.NewFilesProgress(snapshot.ProcessedCount, snapshot.FoundCount)
+                : SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount);
+        });
+
+        try
+        {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+            var indexing = _indexing.Start(folder, progress, IndexingToken(), pass);
+            _indexingTask = indexing;
+            var result = await indexing.ConfigureAwait(true);
+            var settings = LoadSettings();
+            IndexingRunState.OnFinished(settings, completed: result.IsCompleted);
+            SaveSettings(settings);
+            _showMainSearch = true;
+            if (SearchTab.IsChecked == true)
+            {
+                if (preserveSearch)
+                {
+                    if (_searchSubmitted)
+                    {
+                        RunSearch();
+                    }
+                    else
+                    {
+                        ShowIdleSearch();
+                    }
+                }
+                else
+                {
+                    ShowMainSearch(resetSearch: true);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            IndexedSummaryText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "인덱싱을 잠시 멈췄습니다. 다시 켜면 남은 파일부터 이어서 읽습니다.";
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"인덱싱을 끝내지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            _indexingTask = null;
+            _isIndexing = false;
+            UpdateIndexButtonState();
+            RefreshFolderWatch();
+        }
+
+        if (_pendingWatchSync)
+        {
+            _pendingWatchSync = false;
+            await TryWatchSyncAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async void RebuildIndexButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = LoadSettings().IndexFolder;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            _showMainSearch = false;
+            SearchTab.IsChecked = true;
+            ShowFirstRun();
+            IndexStatusText.Text = "폴더를 먼저 선택한 뒤 인덱싱하세요.";
+            return;
+        }
+
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        var confirm = await MessageDialog.ConfirmAsync(
+            this,
+            "처음부터 다시 읽기",
+            "원본 파일은 그대로입니다. 이 앱의 검색 목록만 지우고 폴더를 처음부터 다시 읽습니다.",
+            "다시 읽기",
+            "취소").ConfigureAwait(true);
+        if (!confirm)
+        {
+            return;
+        }
+
+        _isIndexing = true;
+        UpdateIndexButtonState();
+        _searchSubmitted = false;
+        SearchQueryBox.Text = string.Empty;
+        SearchResultsList.ItemsSource = null;
+        ApplySearchListMode(SearchListMode.Idle);
+        IndexedSummaryText.Text = "검색 목록을 지우고 다시 읽는 중…";
+        IdleHintText.Text = "원본 파일은 그대로 두고, 이 앱의 검색 목록만 다시 만듭니다.";
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
+
+        var progress = new Progress<IndexingProgress>(snapshot =>
+        {
+            IndexedSummaryText.Text = snapshot.IsCompleted
+                ? SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount)
+                : $"{snapshot.PhaseKo ?? "인덱싱 중"} · {snapshot.ProcessedCount} / {snapshot.FoundCount}";
+        });
+
+        try
+        {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+            var indexing = _indexing.Rebuild(folder, progress, IndexingToken());
+            _indexingTask = indexing;
+            var result = await indexing.ConfigureAwait(true);
+            var settings = LoadSettings();
+            IndexingRunState.OnFinished(settings, completed: result.IsCompleted);
+            SaveSettings(settings);
+            _showMainSearch = true;
+            if (SearchTab.IsChecked == true)
+            {
+                ShowMainSearch(resetSearch: true);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            IndexedSummaryText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "다시 인덱싱을 잠시 멈췄습니다. 다시 켜면 이어서 읽습니다.";
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"다시 인덱싱하지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            _indexingTask = null;
+            _isIndexing = false;
+            UpdateIndexButtonState();
+            RefreshFolderWatch();
+        }
     }
 
     private async void UpdateButton_OnClick(object? sender, RoutedEventArgs e)
@@ -247,12 +718,37 @@ public partial class MainWindow : Window
 
         try
         {
-            var result = await _updater.CheckAndApplyAsync(_updateFeed).ConfigureAwait(true);
+            var result = await _updater.CheckAsync(_updateFeed).ConfigureAwait(true);
             UpdateStatusText.Text = result.MessageKo;
+            if (result.Status == AppUpdateStatus.Available && !string.IsNullOrWhiteSpace(result.NewerVersion))
+            {
+                var confirm = await MessageDialog.ConfirmAsync(
+                    this,
+                    UpdatePromptCopy.AvailableTitle,
+                    AvailableUpdatePrompt(result.NewerVersion)).ConfigureAwait(true);
+                if (!confirm)
+                {
+                    UpdateStatusText.Text = "업데이트를 나중에 설치할 수 있습니다.";
+                    return;
+                }
+
+                await ApplyConfirmedUpdateAsync(result.NewerVersion).ConfigureAwait(true);
+                return;
+            }
+
+            if (result.Status is AppUpdateStatus.NotPackaged or AppUpdateStatus.Failed)
+            {
+                var body = result.Status == AppUpdateStatus.NotPackaged
+                    && !string.IsNullOrWhiteSpace(result.NewerVersion)
+                    ? AvailableInstallBuildPrompt(result.NewerVersion)
+                    : result.MessageKo;
+                await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, body).ConfigureAwait(true);
+            }
         }
         catch (Exception ex)
         {
             UpdateStatusText.Text = $"업데이트를 확인하지 못했습니다: {ex.Message}";
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, UpdateStatusText.Text).ConfigureAwait(true);
         }
         finally
         {
@@ -260,88 +756,341 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RunSearch()
+    private void ShowIdleSearch()
     {
         var all = _indexing.GetIndexedDocuments();
+        var coverage = CoverageOf(all);
+        IndexedSummaryText.Text = SearchStatusFormatter.CoverageChip(coverage);
+        IdleHintText.Text = SearchIdleCopy.Hint(coverage);
+        ApplyFormatFilterVisuals();
+        ShowIndexedFolder();
+        SearchResultsList.ItemsSource = null;
+        ApplySearchListMode(SearchListMode.Idle);
+    }
+
+    private void ShowIndexedFolder()
+    {
+        var folder = LoadSettings().IndexFolder ?? string.Empty;
+        IndexedFolderPathText.Text = folder;
+        IndexedFolderButton.IsVisible = !string.IsNullOrWhiteSpace(folder);
+        ToolTip.SetTip(IndexedFolderButton, string.IsNullOrWhiteSpace(folder) ? null : folder);
+    }
+
+    private void ApplySearchListMode(SearchListMode mode)
+    {
+        IdleHintPanel.IsVisible = mode == SearchListMode.Idle;
+        SearchResultsList.IsVisible = mode == SearchListMode.Hits;
+        EmptyHintPanel.IsVisible = mode == SearchListMode.Empty;
+        ResultCountText.IsVisible = mode != SearchListMode.Idle;
+    }
+
+    private void RunSearch()
+    {
         var query = SearchQueryBox.Text;
-        IReadOnlyList<SearchResultRow> rows;
-        if (string.IsNullOrWhiteSpace(query))
+        _searchSubmitted = !string.IsNullOrWhiteSpace(query);
+        if (SearchListModeResolver.Resolve(query, _searchSubmitted, hitCount: 1) == SearchListMode.Idle)
         {
-            rows = all.Select(doc => new SearchResultRow
-            {
-                FileName = Path.GetFileName(doc.FilePath),
-                FilePath = doc.FilePath,
-                Snippet = EvidenceSnippet.From(doc.BodyText, []),
-                MatchLabel = doc.OcrPageCount > 0 ? "OCR 포함" : (string.IsNullOrWhiteSpace(doc.BodyText) ? "파일명만" : "본문 인덱스"),
-                HasSnippet = !string.IsNullOrWhiteSpace(doc.BodyText),
-            }).ToList();
+            ShowIdleSearch();
+            return;
         }
-        else
+
+        var all = _indexing.GetIndexedDocuments();
+        var tokens = FilenameSearchQuery.ExtractTokens(query);
+        var rows = _indexing.Search(query!, _formatFilter).Select(hit =>
         {
-            rows = _indexing.Search(query).Select(hit => new SearchResultRow
+            var path = hit.Document.FilePath;
+            var fileName = Path.GetFileName(path);
+            var group = SearchResultDisplay.KindGroup(path);
+            return new SearchResultRow
             {
-                FileName = Path.GetFileName(hit.Document.FilePath),
-                FilePath = hit.Document.FilePath,
+                FileName = fileName,
+                FilePath = path,
+                KindLabel = IndexableFiles.Badge(path),
                 Snippet = hit.Snippet,
                 MatchLabel = hit.MatchLabelKo,
                 HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
-            }).ToList();
-        }
+                LocationLine = SearchResultDisplay.LocationLine(path, hit.Document.LastWriteTimeUtc),
+                IsPdf = group == SearchFormatFilter.Pdf,
+                IsWord = group == SearchFormatFilter.Word,
+                IsHangul = group == SearchFormatFilter.Hangul,
+                IsExcel = group == SearchFormatFilter.Excel,
+                FileNameSpans = EvidenceSnippet.Highlight(fileName, tokens),
+                SnippetSpans = EvidenceSnippet.Highlight(hit.Snippet, tokens),
+            };
+        }).ToList();
 
         IndexedSummaryText.Text = FormatCoverage(all);
+        ShowIndexedFolder();
+        ResultCountText.Text = SearchStatusFormatter.HitCount(rows.Count);
         SearchResultsList.ItemsSource = rows;
 
-        if (rows.Count > 0)
+        var mode = SearchListModeResolver.Resolve(query, _searchSubmitted, rows.Count);
+        if (mode == SearchListMode.Hits)
         {
-            SearchEmptyText.IsVisible = false;
+            ApplySearchListMode(SearchListMode.Hits);
             return;
         }
 
         var coverage = _indexing.GetCoverage();
-        if (all.Count == 0)
-        {
-            SearchEmptyText.Text = "인덱싱된 PDF가 없습니다. 아래에서 폴더를 바꿔 다시 인덱싱할 수 있습니다.";
-        }
-        else if (coverage.BodyCount == 0)
-        {
-            SearchEmptyText.Text = "파일명에 그 단어가 없습니다. 본문·OCR 검색은 「폴더 변경 / 다시 인덱싱」을 한 번 더 해야 합니다.";
-        }
-        else
-        {
-            SearchEmptyText.Text = "조건에 맞는 파일이 없습니다. 파일명 또는 본문(OCR 포함)에 단어가 있어야 합니다.";
-        }
-
-        SearchEmptyText.IsVisible = true;
+        SearchEmptyText.Text = SearchStatusFormatter.EmptyResults(all.Count, coverage.BodyCount, _isIndexing, _formatFilter);
+        ApplySearchListMode(SearchListMode.Empty);
     }
 
-    private static string FormatCoverage(IReadOnlyList<IndexedDocument> all)
+    private static string FormatCoverage(IReadOnlyList<IndexedDocument> all) =>
+        SearchStatusFormatter.CoverageChip(CoverageOf(all));
+
+    private static IndexCoverage CoverageOf(IReadOnlyList<IndexedDocument> all) =>
+        new(
+            all.Count,
+            all.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText)),
+            all.Sum(doc => doc.OcrPageCount),
+            CompositeOcrEngine.CreateDefault().IsAvailable);
+
+    private async Task TryResumeOrBackfillIndexingAsync()
     {
-        var body = all.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText));
-        var ocrPages = all.Sum(doc => doc.OcrPageCount);
-        var ocr = TesseractCliOcrEngine.IsOnPath ? $"OCR {ocrPages}쪽" : "OCR 엔진 없음";
-        return $"인덱싱 완료 · {all.Count}건 · 본문 {body}건 · {ocr}";
+        try
+        {
+            await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            // Digital PDF body search still works without tessdata.
+        }
+
+        if (_isIndexing)
+        {
+            return;
+        }
+
+        var settings = LoadSettings();
+        var resume = IndexResumePolicy.ShouldResume(settings);
+        var backfill = IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), settings.IndexFolder);
+        var folder = settings.IndexFolder;
+        var plan = !string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder)
+            ? _indexing.PlanSync(folder)
+            : new IndexSyncPlan(0, 0, 0);
+        var sync = !resume && !backfill && IndexSyncPolicy.ShouldAutoSync(settings, plan);
+        if (!resume && !backfill && !sync)
+        {
+            if (settings.IndexingInProgress)
+            {
+                settings.IndexingInProgress = false;
+                SaveSettings(settings);
+            }
+
+            if (SearchPanel.IsVisible)
+            {
+                if (_searchSubmitted)
+                {
+                    RunSearch();
+                }
+                else
+                {
+                    ShowIdleSearch();
+                }
+            }
+
+            return;
+        }
+
+        if (sync && !string.IsNullOrWhiteSpace(folder))
+        {
+            await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
+            return;
+        }
+
+        folder = settings.IndexFolder!;
+        _isIndexing = true;
+        UpdateIndexButtonState();
+        BeginIndexingCancellation();
+        MarkIndexingStarted();
+        IndexedSummaryText.Text = resume ? "이어서 읽는 중…" : "본문 읽는 중…";
+        IndexStatusText.Text = resume ? "업데이트가 끝난 뒤 인덱싱을 이어서 합니다." : "인덱싱 중…";
+        if (SearchPanel.IsVisible && _searchSubmitted)
+        {
+            RunSearch();
+        }
+        else if (SearchPanel.IsVisible)
+        {
+            SearchResultsList.ItemsSource = null;
+            ApplySearchListMode(SearchListMode.Idle);
+        }
+
+        var progress = new Progress<IndexingProgress>(snapshot =>
+        {
+            IndexedSummaryText.Text = resume
+                ? SearchStatusFormatter.ResumeProgress(snapshot.ProcessedCount, snapshot.FoundCount)
+                : SearchStatusFormatter.CoverageProgress(snapshot.ProcessedCount, snapshot.FoundCount);
+            IndexCountText.Text = $"건수: {snapshot.ProcessedCount} / {snapshot.FoundCount}";
+            IndexCurrentFileText.Text = string.IsNullOrWhiteSpace(snapshot.CurrentFile)
+                ? "현재 파일: —"
+                : $"현재 파일: {Path.GetFileName(snapshot.CurrentFile)}";
+            IndexStatusText.Text = snapshot.IsCompleted
+                ? FormatCompleteStatus(snapshot.Errors.Count)
+                : resume
+                    ? "이어서 읽는 중…"
+                    : string.IsNullOrWhiteSpace(snapshot.PhaseKo) ? "인덱싱 중…" : snapshot.PhaseKo;
+        });
+
+        try
+        {
+            var indexing = _indexing.Start(folder, progress, IndexingToken());
+            _indexingTask = indexing;
+            await indexing.ConfigureAwait(true);
+            settings = LoadSettings();
+            IndexingRunState.OnFinished(settings, completed: true);
+            SaveSettings(settings);
+            _showMainSearch = true;
+            if (SearchTab.IsChecked == true)
+            {
+                ShowMainSearch(resetSearch: false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            IndexedSummaryText.Text = _resumeIndexingAfterUpdate
+                ? "업데이트가 끝나면 인덱싱을 이어서 합니다."
+                : "인덱싱을 잠시 멈췄습니다.";
+        }
+        catch (Exception ex)
+        {
+            IndexedSummaryText.Text = $"본문을 읽지 못했습니다: {ex.Message}";
+        }
+        finally
+        {
+            _indexingTask = null;
+            _isIndexing = false;
+            UpdateIndexButtonState();
+            RefreshFolderWatch();
+        }
+    }
+
+    private void BeginIndexingCancellation()
+    {
+        _indexCts?.Dispose();
+        _indexCts = new CancellationTokenSource();
+    }
+
+    private CancellationToken IndexingToken() => _indexCts?.Token ?? CancellationToken.None;
+
+    private void MarkIndexingStarted()
+    {
+        var settings = LoadSettings();
+        IndexingRunState.OnStarted(settings);
+        SaveSettings(settings);
+    }
+
+    private void RefreshFolderWatch()
+    {
+        var settings = LoadSettings();
+        if (IndexWatchPolicy.ShouldWatchFolder(settings))
+        {
+            _folderWatch.SetFolder(settings.IndexFolder);
+            return;
+        }
+
+        _folderWatch.Stop();
+    }
+
+    private async Task TryWatchSyncAsync()
+    {
+        if (_isIndexing)
+        {
+            _pendingWatchSync = true;
+            return;
+        }
+
+        var settings = LoadSettings();
+        if (!IndexWatchPolicy.ShouldWatchFolder(settings) || string.IsNullOrWhiteSpace(settings.IndexFolder))
+        {
+            return;
+        }
+
+        var folder = settings.IndexFolder;
+        var plan = _indexing.PlanSync(folder);
+        if (!plan.NeedsWork)
+        {
+            _watchRetryCount = 0;
+            return;
+        }
+
+        await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…", preserveSearch: true).ConfigureAwait(true);
+        if (_indexing.PlanSync(folder).NeedsWork && _watchRetryCount < 3)
+        {
+            _watchRetryCount++;
+            _folderWatch.Ping();
+            return;
+        }
+
+        _watchRetryCount = 0;
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (SearchResultsList.SelectedItem is not SearchResultRow row || !File.Exists(row.FilePath))
+        if (SearchResultsList.SelectedItem is SearchResultRow row)
         {
+            OpenIndexedFile(row.FilePath);
+        }
+    }
+
+    private void OpenResultButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: SearchResultRow row })
+        {
+            OpenIndexedFile(row.FilePath);
+        }
+
+        e.Handled = true;
+    }
+
+    private void RevealResultButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: SearchResultRow row })
+        {
+            RevealIndexedFile(row.FilePath);
+        }
+
+        e.Handled = true;
+    }
+
+    private void OpenIndexedFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            ShowFileActionError("파일을 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 제목 아래 폴더 경로를 확인해 보세요.");
             return;
         }
 
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(row.FilePath)
-            {
-                UseShellExecute = true,
-            });
+            Process.Start(LocalFileActions.Open(path));
         }
         catch (Exception ex)
         {
-            SearchEmptyText.Text = $"파일을 열지 못했습니다: {ex.Message}";
-            SearchEmptyText.IsVisible = true;
+            ShowFileActionError("파일을 열 수 없습니다", ex.Message);
         }
     }
+
+    private void RevealIndexedFile(string path)
+    {
+        if (!File.Exists(path) && !Directory.Exists(Path.GetDirectoryName(path) ?? string.Empty))
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 제목 아래 폴더 경로를 확인해 보세요.");
+            return;
+        }
+
+        try
+        {
+            Process.Start(LocalFileActions.Reveal(path));
+        }
+        catch (Exception ex)
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", ex.Message);
+        }
+    }
+
+    private void ShowFileActionError(string title, string body) =>
+        _ = MessageDialog.AlertAsync(this, title, body);
 
     private static string FormatCompleteStatus(int errorCount) =>
         errorCount > 0 ? $"완료 (오류 {errorCount}건)" : "완료";
@@ -367,9 +1116,17 @@ public partial class MainWindow : Window
     {
         public required string FileName { get; init; }
         public required string FilePath { get; init; }
+        public string KindLabel { get; init; } = "파일";
         public string Snippet { get; init; } = string.Empty;
         public string MatchLabel { get; init; } = string.Empty;
         public bool HasSnippet { get; init; }
+        public string LocationLine { get; init; } = string.Empty;
+        public bool IsPdf { get; init; }
+        public bool IsWord { get; init; }
+        public bool IsHangul { get; init; }
+        public bool IsExcel { get; init; }
+        public IReadOnlyList<SnippetSpan> FileNameSpans { get; init; } = [];
+        public IReadOnlyList<SnippetSpan> SnippetSpans { get; init; } = [];
     }
 
     private sealed class HistoryRow
