@@ -24,6 +24,9 @@ public sealed class AppSettings
 
     public string? PendingUpdateNotes { get; set; }
 
+    /// <summary>Last app version that finished starting, used to show update notes after Setup.exe upgrades.</summary>
+    public string? LastRunVersion { get; set; }
+
     /// <summary>True while Start/Rebuild is running, so an update restart can continue leftover files.</summary>
     public bool IndexingInProgress { get; set; }
 }

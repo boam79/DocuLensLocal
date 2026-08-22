@@ -88,6 +88,7 @@ public class AppUpdaterTests
         Assert.DoesNotContain("이어서", UpdatePromptCopy.AvailableBody("0.1.16"), StringComparison.Ordinal);
         Assert.Contains("이어서", UpdatePromptCopy.AvailableBody("0.1.16", indexingNow: true), StringComparison.Ordinal);
         Assert.Equal("업데이트 내역", UpdatePromptCopy.NotesTitle);
+        Assert.Contains("정보 탭 상태", UpdatePromptCopy.AvailableBody("0.1.28", notes: "0.1.28\n정보 탭 상태"), StringComparison.Ordinal);
     }
 
     private sealed class FakeUpdateFeed : IUpdateFeed

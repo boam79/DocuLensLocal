@@ -72,15 +72,17 @@ public partial class MainWindow : Window
     private async Task TryShowPendingUpdateNotesAsync()
     {
         var settings = LoadSettings();
-        if (string.IsNullOrWhiteSpace(settings.PendingUpdateNotes))
+        var current = CurrentDisplayVersion();
+        var notes = UpdateNotesPolicy.StartupNotes(settings.PendingUpdateNotes, settings.LastRunVersion, current);
+        settings.PendingUpdateNotes = null;
+        settings.PendingUpdateVersion = null;
+        settings.LastRunVersion = current;
+        SaveSettings(settings);
+        if (string.IsNullOrWhiteSpace(notes))
         {
             return;
         }
 
-        var notes = settings.PendingUpdateNotes;
-        settings.PendingUpdateNotes = null;
-        settings.PendingUpdateVersion = null;
-        SaveSettings(settings);
         await MessageDialog.AlertAsync(this, UpdatePromptCopy.NotesTitle, notes).ConfigureAwait(true);
     }
 
@@ -92,7 +94,7 @@ public partial class MainWindow : Window
             var confirm = await MessageDialog.ConfirmAsync(
                 this,
                 UpdatePromptCopy.AvailableTitle,
-                UpdatePromptCopy.AvailableBody(result.NewerVersion, IndexingWouldResume())).ConfigureAwait(true);
+                AvailableUpdatePrompt(result.NewerVersion)).ConfigureAwait(true);
             if (!confirm)
             {
                 return;
@@ -104,9 +106,17 @@ public partial class MainWindow : Window
 
         if (result.Status == AppUpdateStatus.NotPackaged && !string.IsNullOrWhiteSpace(result.NewerVersion))
         {
-            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, result.MessageKo).ConfigureAwait(true);
+            await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, AvailableInstallBuildPrompt(result.NewerVersion)).ConfigureAwait(true);
         }
     }
+
+    private string AvailableUpdatePrompt(string newerVersion) =>
+        UpdateNotesPolicy.AvailablePrompt(CurrentDisplayVersion(), newerVersion, IndexingWouldResume());
+
+    private string AvailableInstallBuildPrompt(string newerVersion) =>
+        UpdatePromptCopy.InstallBuildOnly(newerVersion)
+        + "\n\n"
+        + ReleaseHistory.FormatNotes(CurrentDisplayVersion(), newerVersion);
 
     private async Task ApplyConfirmedUpdateAsync(string version)
     {
@@ -715,7 +725,7 @@ public partial class MainWindow : Window
                 var confirm = await MessageDialog.ConfirmAsync(
                     this,
                     UpdatePromptCopy.AvailableTitle,
-                    UpdatePromptCopy.AvailableBody(result.NewerVersion, IndexingWouldResume())).ConfigureAwait(true);
+                    AvailableUpdatePrompt(result.NewerVersion)).ConfigureAwait(true);
                 if (!confirm)
                 {
                     UpdateStatusText.Text = "업데이트를 나중에 설치할 수 있습니다.";
@@ -728,7 +738,11 @@ public partial class MainWindow : Window
 
             if (result.Status is AppUpdateStatus.NotPackaged or AppUpdateStatus.Failed)
             {
-                await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, result.MessageKo).ConfigureAwait(true);
+                var body = result.Status == AppUpdateStatus.NotPackaged
+                    && !string.IsNullOrWhiteSpace(result.NewerVersion)
+                    ? AvailableInstallBuildPrompt(result.NewerVersion)
+                    : result.MessageKo;
+                await MessageDialog.AlertAsync(this, UpdatePromptCopy.AvailableTitle, body).ConfigureAwait(true);
             }
         }
         catch (Exception ex)

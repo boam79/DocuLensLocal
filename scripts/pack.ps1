@@ -19,7 +19,7 @@ $dotnet = Resolve-Dotnet
 $publishDir = Join-Path $root "artifacts/publish"
 $releaseDir = Join-Path $root "artifacts/Releases"
 $appCsproj = Join-Path $root "src/DocuLensLocal.App/DocuLensLocal.App.csproj"
-$version = "0.1.28"
+$version = "0.1.29"
 $splash = Join-Path $root "assets/splash.png"
 
 Write-Host "dotnet: $dotnet"

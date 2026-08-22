@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.28</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.29</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -85,6 +85,7 @@ public class SolutionSmokeTests
         Assert.Contains("x:Name=\"SecondaryButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"확인\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"나중에\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("MaxHeight=\"280\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -94,6 +95,7 @@ public class SolutionSmokeTests
         var settings = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "AppSettings.cs"));
 
         Assert.Contains("IndexingInProgress", settings, StringComparison.Ordinal);
+        Assert.Contains("LastRunVersion", settings, StringComparison.Ordinal);
         Assert.Contains("IndexResumePolicy.ShouldResume", window, StringComparison.Ordinal);
         Assert.Contains("CancelIndexingForUpdate", window, StringComparison.Ordinal);
         Assert.Contains("IndexPass.NewAndChanged", window, StringComparison.Ordinal);
@@ -112,6 +114,9 @@ public class SolutionSmokeTests
         Assert.Contains("CoverageChip", window, StringComparison.Ordinal);
         Assert.Contains("HitCount", window, StringComparison.Ordinal);
         Assert.Contains("다시 읽기", window, StringComparison.Ordinal);
+        Assert.Contains("UpdateNotesPolicy", window, StringComparison.Ordinal);
+        Assert.Contains("AvailableUpdatePrompt", window, StringComparison.Ordinal);
+        Assert.Contains("LastRunVersion", window, StringComparison.Ordinal);
         Assert.Contains("InfoStatusCopy", window, StringComparison.Ordinal);
         Assert.Contains("RefreshInfoPanel", window, StringComparison.Ordinal);
         Assert.Contains("ReleaseHistory.Recent", window, StringComparison.Ordinal);

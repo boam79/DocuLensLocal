@@ -8,12 +8,20 @@ public static class UpdatePromptCopy
     public const string NotesTitle = "업데이트 내역";
     public const string NotesOk = "확인";
 
-    public static string AvailableBody(string version, bool indexingNow = false)
+    public static string AvailableBody(string version, bool indexingNow = false, string? notes = null)
     {
         var body = $"새 버전 {version}을(를) 설치할까요? 확인을 누르면 업데이트하고 프로그램을 다시 시작합니다.";
-        return indexingNow
-            ? body + " 인덱싱 중이면 다시 시작한 뒤 남은 파일부터 이어서 읽습니다."
-            : body;
+        if (indexingNow)
+        {
+            body += " 인덱싱 중이면 다시 시작한 뒤 남은 파일부터 이어서 읽습니다.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(notes))
+        {
+            body += "\n\n" + notes.Trim();
+        }
+
+        return body;
     }
 
     public static string InstallBuildOnly(string version) =>
