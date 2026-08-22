@@ -177,25 +177,40 @@ public partial class MainWindow : Window
     private void LoadInfoPanel()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product
-            ?? "DocuLens Local";
         var version = AppVersionFormatter.DisplayVersion(
             assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
             assembly.GetName().Version);
 
-        ProductNameText.Text = product;
+        ProductNameText.Text = InfoStatusCopy.Headline;
         VersionText.Text = $"버전 {version}";
-        var notes = ReleaseHistory.Known;
-        VersionHistoryList.ItemsSource = notes
-            .Select((note, i) => new HistoryRow
-            {
-                Version = note.Version,
-                SummaryKo = note.SummaryKo,
-                IsCurrent = i == 0,
-                IsLast = i == notes.Count - 1,
-            })
-            .ToList();
+        VersionHistoryList.ItemsSource = HistoryRows(ReleaseHistory.Recent(), markCurrent: true);
+        var older = ReleaseHistory.Older();
+        OlderVersionHistoryList.ItemsSource = HistoryRows(older, markCurrent: false);
+        OlderHistoryExpander.IsVisible = older.Count > 0;
+        RefreshInfoPanel();
     }
+
+    private void RefreshInfoPanel()
+    {
+        var folder = LoadSettings().IndexFolder;
+        InfoFolderPathText.Text = InfoStatusCopy.FolderLine(folder);
+        var canOpen = !string.IsNullOrWhiteSpace(folder);
+        InfoFolderButton.IsEnabled = canOpen;
+        ToolTip.SetTip(InfoFolderButton, canOpen ? folder : null);
+        var coverage = CoverageOf(_indexing.GetIndexedDocuments());
+        InfoDocumentCountText.Text = InfoStatusCopy.DocumentCount(coverage);
+        InfoBodyCountText.Text = InfoStatusCopy.BodyLabel(coverage);
+        InfoOcrCountText.Text = InfoStatusCopy.OcrLabel(coverage);
+    }
+
+    private static List<HistoryRow> HistoryRows(IReadOnlyList<ReleaseNote> notes, bool markCurrent) =>
+        notes.Select((note, i) => new HistoryRow
+        {
+            Version = note.Version,
+            SummaryKo = note.SummaryKo,
+            IsCurrent = markCurrent && i == 0,
+            IsLast = i == notes.Count - 1,
+        }).ToList();
 
     private void ApplyStartupView()
     {
@@ -223,6 +238,7 @@ public partial class MainWindow : Window
         {
             FirstRunPanel.IsVisible = false;
             SearchPanel.IsVisible = false;
+            RefreshInfoPanel();
             return;
         }
 

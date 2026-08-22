@@ -5,16 +5,17 @@ namespace DocuLensLocal.Core.Tests;
 public class ReleaseHistoryTests
 {
     [Fact]
-    public void known_releases_cover_0_1_0_through_0_1_27_newest_first()
+    public void known_releases_cover_0_1_0_through_0_1_28_newest_first()
     {
         var versions = ReleaseHistory.Known.Select(note => note.Version).ToArray();
 
-        Assert.Equal(["0.1.27", "0.1.26", "0.1.25", "0.1.24", "0.1.23", "0.1.22", "0.1.21", "0.1.20", "0.1.19", "0.1.18", "0.1.17", "0.1.16", "0.1.15", "0.1.14", "0.1.13", "0.1.12", "0.1.11", "0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1", "0.1.0"], versions);
+        Assert.Equal(["0.1.28", "0.1.27", "0.1.26", "0.1.25", "0.1.24", "0.1.23", "0.1.22", "0.1.21", "0.1.20", "0.1.19", "0.1.18", "0.1.17", "0.1.16", "0.1.15", "0.1.14", "0.1.13", "0.1.12", "0.1.11", "0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1", "0.1.0"], versions);
     }
 
     [Fact]
     public void known_releases_keep_short_korean_notes()
     {
+        Assert.Equal("정보 탭 상태", Note("0.1.28").SummaryKo);
         Assert.Equal("검색 화면 정리", Note("0.1.27").SummaryKo);
         Assert.Equal("종류 여러 개 검색", Note("0.1.26").SummaryKo);
         Assert.Equal("검색 결과에서 열기", Note("0.1.25").SummaryKo);
@@ -46,10 +47,31 @@ public class ReleaseHistoryTests
     }
 
     [Fact]
+    public void recent_history_is_the_newest_five()
+    {
+        var recent = ReleaseHistory.Recent();
+
+        Assert.Equal(InfoStatusCopy.RecentHistoryCount, recent.Count);
+        Assert.Equal(ReleaseHistory.Known[0].Version, recent[0].Version);
+        Assert.Equal(ReleaseHistory.Known[4].Version, recent[4].Version);
+    }
+
+    [Fact]
+    public void older_history_starts_after_the_recent_five()
+    {
+        var older = ReleaseHistory.Older();
+
+        Assert.Equal(ReleaseHistory.Known[5].Version, older[0].Version);
+        Assert.Equal(ReleaseHistory.Known.Count - InfoStatusCopy.RecentHistoryCount, older.Count);
+    }
+
+    [Fact]
     public void format_notes_lists_versions_after_the_previous_one()
     {
-        var text = ReleaseHistory.FormatNotes("0.1.14", "0.1.27");
+        var text = ReleaseHistory.FormatNotes("0.1.14", "0.1.28");
 
+        Assert.Contains("0.1.28", text, StringComparison.Ordinal);
+        Assert.Contains("정보 탭 상태", text, StringComparison.Ordinal);
         Assert.Contains("0.1.27", text, StringComparison.Ordinal);
         Assert.Contains("검색 화면 정리", text, StringComparison.Ordinal);
         Assert.Contains("0.1.26", text, StringComparison.Ordinal);

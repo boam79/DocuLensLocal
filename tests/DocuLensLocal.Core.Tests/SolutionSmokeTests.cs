@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.27</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.28</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -66,6 +66,14 @@ public class SolutionSmokeTests
         Assert.Contains("Content=\"폴더에서 보기\"", axaml, StringComparison.Ordinal);
         Assert.Contains("HighlightedTextBlock", axaml, StringComparison.Ordinal);
         Assert.Contains("Classes=\"result-badge\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("이 컴퓨터에서만 찾습니다", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"InfoFolderButton\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"InfoDocumentCountText\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Header=\"이전 버전\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("새 버전이 있으면 여기서 받습니다.", axaml, StringComparison.Ordinal);
+        Assert.Contains("종류 칸은 여러 개를 함께 고를 수 있습니다.", axaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("GitHub Releases에서 새 버전을 확인합니다.", axaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Text=\"DocuLens Local\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -104,6 +112,10 @@ public class SolutionSmokeTests
         Assert.Contains("CoverageChip", window, StringComparison.Ordinal);
         Assert.Contains("HitCount", window, StringComparison.Ordinal);
         Assert.Contains("다시 읽기", window, StringComparison.Ordinal);
+        Assert.Contains("InfoStatusCopy", window, StringComparison.Ordinal);
+        Assert.Contains("RefreshInfoPanel", window, StringComparison.Ordinal);
+        Assert.Contains("ReleaseHistory.Recent", window, StringComparison.Ordinal);
+        Assert.Contains("OlderHistoryExpander", window, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -170,6 +182,8 @@ public class SolutionSmokeTests
         Assert.Contains("폴더에서 보기", search, StringComparison.Ordinal);
         Assert.Contains("제목 아래", search, StringComparison.Ordinal);
         Assert.Contains("폴더", search, StringComparison.Ordinal);
+        var infoGuide = File.ReadAllText(Path.Combine(docs, "사용-안내.md"));
+        Assert.Contains("지금 폴더", infoGuide, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

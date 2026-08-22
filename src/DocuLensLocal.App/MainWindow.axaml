@@ -10,6 +10,48 @@
         Background="{StaticResource PageBrush}"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <DataTemplate x:Key="HistoryItem">
+            <Grid Margin="0,0,0,16" MinHeight="28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Rectangle Width="2"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Stretch"
+                           Fill="{StaticResource AccentBrush}"
+                           Margin="0,8,0,-16"
+                           IsVisible="{Binding !IsLast}"/>
+                <Ellipse Width="12"
+                         Height="12"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Top"
+                         Margin="0,2,0,0"
+                         Stroke="{StaticResource AccentBrush}"
+                         StrokeThickness="2"
+                         Fill="White"
+                         Classes.current="{Binding IsCurrent}"/>
+                <Border Grid.Column="1"
+                        Background="{StaticResource VersionChipBrush}"
+                        CornerRadius="6"
+                        Padding="8,3"
+                        VerticalAlignment="Top"
+                        Margin="12,0,12,0">
+                    <TextBlock FontSize="12"
+                               Foreground="{StaticResource VersionChipTextBrush}"
+                               Text="{Binding Version}"/>
+                </Border>
+                <TextBlock Grid.Column="2"
+                           VerticalAlignment="Top"
+                           Margin="0,2,0,0"
+                           FontSize="14"
+                           Foreground="{StaticResource TitleBrush}"
+                           Text="{Binding SummaryKo}"/>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -362,10 +404,11 @@
 
                     <StackPanel Grid.Row="0">
                         <TextBlock x:Name="ProductNameText"
-                                   FontSize="28"
-                                   FontWeight="Bold"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
                                    Foreground="{StaticResource TitleBrush}"
-                                   Text="DocuLens Local"/>
+                                   TextWrapping="Wrap"
+                                   Text="이 컴퓨터에서만 찾습니다"/>
                         <Border Margin="0,12,0,0"
                                 Background="{StaticResource AccentBrush}"
                                 CornerRadius="14"
@@ -377,64 +420,98 @@
                                        Foreground="White"
                                        Text="버전"/>
                         </Border>
-                        <Border Margin="0,20,0,0"
-                                Height="1"
-                                Background="{StaticResource LineBrush}"/>
                     </StackPanel>
 
                     <ScrollViewer Grid.Row="1"
-                                  Margin="0,20,0,0"
+                                  Margin="0,16,0,0"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                            <TextBlock FontSize="16"
+                            <Border Background="#F8FAFC"
+                                    BorderBrush="{StaticResource LineBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="16,14">
+                                <StackPanel>
+                                    <TextBlock FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource MutedBrush}"
+                                               Text="지금 폴더"/>
+                                    <Button x:Name="InfoFolderButton"
+                                            Classes="folder-link"
+                                            Margin="0,6,0,0"
+                                            Click="IndexedFolderButton_OnClick">
+                                        <TextBlock x:Name="InfoFolderPathText"
+                                                   FontSize="13"
+                                                   TextWrapping="Wrap"
+                                                   Text=""/>
+                                    </Button>
+                                    <WrapPanel Margin="0,12,0,0">
+                                        <Border Background="{StaticResource ChipBrush}"
+                                                CornerRadius="10"
+                                                Padding="10,5"
+                                                Margin="0,0,8,8">
+                                            <TextBlock x:Name="InfoDocumentCountText"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource ChipTextBrush}"
+                                                       Text="문서 없음"/>
+                                        </Border>
+                                        <Border Background="{StaticResource ChipBrush}"
+                                                CornerRadius="10"
+                                                Padding="10,5"
+                                                Margin="0,0,8,8">
+                                            <TextBlock x:Name="InfoBodyCountText"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource ChipTextBrush}"
+                                                       Text="본문 없음"/>
+                                        </Border>
+                                        <Border Background="{StaticResource ChipBrush}"
+                                                CornerRadius="10"
+                                                Padding="10,5"
+                                                Margin="0,0,8,8">
+                                            <TextBlock x:Name="InfoOcrCountText"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource ChipTextBrush}"
+                                                       Text="OCR 없음"/>
+                                        </Border>
+                                    </WrapPanel>
+                                    <TextBlock Margin="0,4,0,0"
+                                               FontSize="13"
+                                               Foreground="{StaticResource TitleBrush}"
+                                               TextWrapping="Wrap"
+                                               Text="종류 칸은 여러 개를 함께 고를 수 있습니다."/>
+                                    <TextBlock Margin="0,6,0,0"
+                                               FontSize="13"
+                                               Foreground="{StaticResource TitleBrush}"
+                                               TextWrapping="Wrap"
+                                               Text="검색 결과에서 열기로 파일을 엽니다."/>
+                                    <TextBlock Margin="0,6,0,0"
+                                               FontSize="13"
+                                               Foreground="{StaticResource TitleBrush}"
+                                               TextWrapping="Wrap"
+                                               Text="폴더가 다르면 파일이 안 나옵니다."/>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Margin="0,20,0,0"
+                                       FontSize="16"
                                        FontWeight="Normal"
                                        Foreground="{StaticResource TitleBrush}"
                                        Text="버전 히스토리"/>
-                            <ItemsControl x:Name="VersionHistoryList" Margin="0,14,0,0">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,0,0,16" MinHeight="28">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="24"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Rectangle Width="2"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Stretch"
-                                                       Fill="{StaticResource AccentBrush}"
-                                                       Margin="0,8,0,-16"
-                                                       IsVisible="{Binding !IsLast}"/>
-                                            <Ellipse Width="12"
-                                                     Height="12"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Top"
-                                                     Margin="0,2,0,0"
-                                                     Stroke="{StaticResource AccentBrush}"
-                                                     StrokeThickness="2"
-                                                     Fill="White"
-                                                     Classes.current="{Binding IsCurrent}"/>
-                                            <Border Grid.Column="1"
-                                                    Background="{StaticResource VersionChipBrush}"
-                                                    CornerRadius="6"
-                                                    Padding="8,3"
-                                                    VerticalAlignment="Top"
-                                                    Margin="12,0,12,0">
-                                                <TextBlock FontSize="12"
-                                                           Foreground="{StaticResource VersionChipTextBrush}"
-                                                           Text="{Binding Version}"/>
-                                            </Border>
-                                            <TextBlock Grid.Column="2"
-                                                       VerticalAlignment="Top"
-                                                       Margin="0,2,0,0"
-                                                       FontSize="14"
-                                                       Foreground="{StaticResource TitleBrush}"
-                                                       Text="{Binding SummaryKo}"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ItemsControl x:Name="VersionHistoryList"
+                                          Margin="0,14,0,0"
+                                          ItemTemplate="{StaticResource HistoryItem}"/>
+                            <Expander x:Name="OlderHistoryExpander"
+                                      Margin="0,4,0,0"
+                                      Header="이전 버전"
+                                      IsVisible="False">
+                                <ItemsControl x:Name="OlderVersionHistoryList"
+                                              Margin="0,12,0,0"
+                                              ItemTemplate="{StaticResource HistoryItem}"/>
+                            </Expander>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -450,7 +527,7 @@
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"
                                    HorizontalAlignment="Center"
-                                   Text="GitHub Releases에서 새 버전을 확인합니다."/>
+                                   Text="새 버전이 있으면 여기서 받습니다."/>
                     </StackPanel>
                 </Grid>
             </Grid>

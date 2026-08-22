@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.28", "정보 탭 상태"),
         new("0.1.27", "검색 화면 정리"),
         new("0.1.26", "종류 여러 개 검색"),
         new("0.1.25", "검색 결과에서 열기"),
@@ -35,6 +36,12 @@ public static class ReleaseHistory
         new("0.1.1", "스플래시/폴더선택"),
         new("0.1.0", "splash 없음"),
     ];
+
+    public const int RecentCount = InfoStatusCopy.RecentHistoryCount;
+
+    public static IReadOnlyList<ReleaseNote> Recent() => Known.Take(RecentCount).ToList();
+
+    public static IReadOnlyList<ReleaseNote> Older() => Known.Skip(RecentCount).ToList();
 
     public static IReadOnlyList<ReleaseNote> Between(string? afterVersion, string throughVersion)
     {
