@@ -12,7 +12,15 @@ public partial class MessageDialog : Window
     }
 
     public static Task<bool> ConfirmAsync(Window owner, string title, string body) =>
-        ShowAsync(owner, title, body, UpdatePromptCopy.Confirm, UpdatePromptCopy.Later, showSecondary: true);
+        ConfirmAsync(owner, title, body, UpdatePromptCopy.Confirm, UpdatePromptCopy.Later);
+
+    public static Task<bool> ConfirmAsync(
+        Window owner,
+        string title,
+        string body,
+        string primary,
+        string secondary) =>
+        ShowAsync(owner, title, body, primary, secondary, showSecondary: true);
 
     public static async Task AlertAsync(Window owner, string title, string body)
     {

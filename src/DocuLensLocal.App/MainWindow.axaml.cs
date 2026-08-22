@@ -285,13 +285,13 @@ public partial class MainWindow : Window
             && !string.IsNullOrWhiteSpace(folder)
             && Directory.Exists(folder);
         SelectFolderButton.IsEnabled = !_isIndexing;
-        ChangeFolderButton.IsEnabled = !_isIndexing;
-        SyncIndexButton.IsEnabled = !_isIndexing
+        FolderMenuButton.IsEnabled = !_isIndexing;
+        ChangeFolderMenuItem.IsEnabled = !_isIndexing;
+        var folderReady = !_isIndexing
             && !string.IsNullOrWhiteSpace(folder)
             && Directory.Exists(folder);
-        RebuildIndexButton.IsEnabled = !_isIndexing
-            && !string.IsNullOrWhiteSpace(folder)
-            && Directory.Exists(folder);
+        SyncIndexMenuItem.IsEnabled = folderReady;
+        RebuildIndexMenuItem.IsEnabled = folderReady;
     }
 
     private async void SelectFolderButton_OnClick(object? sender, RoutedEventArgs e)
@@ -442,6 +442,7 @@ public partial class MainWindow : Window
         SetFormatSelected(HangulFormatButton, SearchFormatFilter.Hangul);
         SetFormatSelected(ExcelFormatButton, SearchFormatFilter.Excel);
         FormatFilterHintText.Text = SearchFormatFilters.Hint(_formatFilter);
+        FormatFilterHintText.IsVisible = _formatFilter != SearchFormatFilter.All;
     }
 
     private void SetFormatSelected(Button button, SearchFormatFilter format)
@@ -467,6 +468,25 @@ public partial class MainWindow : Window
         SearchTab.IsChecked = true;
         ShowFirstRun();
         IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 그 폴더로 목록을 맞춥니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+    }
+
+    private void IndexedFolderButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = LoadSettings().IndexFolder;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", "폴더가 없거나 옮겨졌습니다. 「폴더」에서 폴더를 바꿔 보세요.");
+            return;
+        }
+
+        try
+        {
+            Process.Start(LocalFileActions.Open(folder));
+        }
+        catch (Exception ex)
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", ex.Message);
+        }
     }
 
     private async void SyncIndexButton_OnClick(object? sender, RoutedEventArgs e)
@@ -602,6 +622,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        var confirm = await MessageDialog.ConfirmAsync(
+            this,
+            "처음부터 다시 읽기",
+            "원본 파일은 그대로입니다. 이 앱의 검색 목록만 지우고 폴더를 처음부터 다시 읽습니다.",
+            "다시 읽기",
+            "취소").ConfigureAwait(true);
+        if (!confirm)
+        {
+            return;
+        }
+
         _isIndexing = true;
         UpdateIndexButtonState();
         _searchSubmitted = false;
@@ -699,12 +730,20 @@ public partial class MainWindow : Window
     {
         var all = _indexing.GetIndexedDocuments();
         var coverage = CoverageOf(all);
-        IndexedSummaryText.Text = SearchStatusFormatter.Coverage(coverage);
+        IndexedSummaryText.Text = SearchStatusFormatter.CoverageChip(coverage);
         IdleHintText.Text = SearchIdleCopy.Hint(coverage);
-        FormatFilterHintText.Text = SearchFormatFilters.Hint(_formatFilter);
-        IndexedFolderText.Text = LoadSettings().IndexFolder ?? string.Empty;
+        ApplyFormatFilterVisuals();
+        ShowIndexedFolder();
         SearchResultsList.ItemsSource = null;
         ApplySearchListMode(SearchListMode.Idle);
+    }
+
+    private void ShowIndexedFolder()
+    {
+        var folder = LoadSettings().IndexFolder ?? string.Empty;
+        IndexedFolderPathText.Text = folder;
+        IndexedFolderButton.IsVisible = !string.IsNullOrWhiteSpace(folder);
+        ToolTip.SetTip(IndexedFolderButton, string.IsNullOrWhiteSpace(folder) ? null : folder);
     }
 
     private void ApplySearchListMode(SearchListMode mode)
@@ -712,6 +751,7 @@ public partial class MainWindow : Window
         IdleHintPanel.IsVisible = mode == SearchListMode.Idle;
         SearchResultsList.IsVisible = mode == SearchListMode.Hits;
         EmptyHintPanel.IsVisible = mode == SearchListMode.Empty;
+        ResultCountText.IsVisible = mode != SearchListMode.Idle;
     }
 
     private void RunSearch()
@@ -750,7 +790,8 @@ public partial class MainWindow : Window
         }).ToList();
 
         IndexedSummaryText.Text = FormatCoverage(all);
-        IndexedFolderText.Text = LoadSettings().IndexFolder ?? string.Empty;
+        ShowIndexedFolder();
+        ResultCountText.Text = SearchStatusFormatter.HitCount(rows.Count);
         SearchResultsList.ItemsSource = rows;
 
         var mode = SearchListModeResolver.Resolve(query, _searchSubmitted, rows.Count);
@@ -766,7 +807,7 @@ public partial class MainWindow : Window
     }
 
     private static string FormatCoverage(IReadOnlyList<IndexedDocument> all) =>
-        SearchStatusFormatter.Coverage(CoverageOf(all));
+        SearchStatusFormatter.CoverageChip(CoverageOf(all));
 
     private static IndexCoverage CoverageOf(IReadOnlyList<IndexedDocument> all) =>
         new(
@@ -986,7 +1027,7 @@ public partial class MainWindow : Window
     {
         if (!File.Exists(path))
         {
-            ShowFileActionError("파일을 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 아래 폴더 경로를 확인해 보세요.");
+            ShowFileActionError("파일을 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 제목 아래 폴더 경로를 확인해 보세요.");
             return;
         }
 
@@ -1004,7 +1045,7 @@ public partial class MainWindow : Window
     {
         if (!File.Exists(path) && !Directory.Exists(Path.GetDirectoryName(path) ?? string.Empty))
         {
-            ShowFileActionError("폴더를 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 아래 폴더 경로를 확인해 보세요.");
+            ShowFileActionError("폴더를 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 제목 아래 폴더 경로를 확인해 보세요.");
             return;
         }
 

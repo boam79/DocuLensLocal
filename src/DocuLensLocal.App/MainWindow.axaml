@@ -89,7 +89,7 @@
                                 Background="{StaticResource ChipBrush}"
                                 CornerRadius="12"
                                 Padding="12,6"
-                                VerticalAlignment="Center"
+                                VerticalAlignment="Top"
                                 Margin="12,0,0,0">
                             <TextBlock x:Name="IndexedSummaryText"
                                        FontSize="12"
@@ -102,6 +102,15 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TitleBrush}"
                                        Text="문서 검색"/>
+                            <Button x:Name="IndexedFolderButton"
+                                    Classes="folder-link"
+                                    Margin="0,6,0,0"
+                                    Click="IndexedFolderButton_OnClick">
+                                <TextBlock x:Name="IndexedFolderPathText"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Text=""/>
+                            </Button>
                             <TextBlock x:Name="IdleHintText"
                                        Margin="0,4,0,0"
                                        FontSize="13"
@@ -157,81 +166,66 @@
                         </DockPanel>
                     </Border>
 
-                    <StackPanel Grid.Row="2" Margin="0,14,0,0" HorizontalAlignment="Center">
-                        <StackPanel x:Name="IdleFormatBadges"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Spacing="12">
-                            <Button x:Name="PdfFormatButton"
-                                    Classes="format pdf"
-                                    Width="72"
-                                    Height="72"
-                                    FontSize="16"
-                                    Tag="Pdf"
-                                    ToolTip.Tip="PDF 포함/제외"
-                                    Content="PDF"
-                                    Click="FormatFilterButton_OnClick"/>
-                            <Button x:Name="WordFormatButton"
-                                    Classes="format word"
-                                    Width="72"
-                                    Height="72"
-                                    FontSize="15"
-                                    Tag="Word"
-                                    ToolTip.Tip="Word 포함/제외"
-                                    Content="WORD"
-                                    Click="FormatFilterButton_OnClick"/>
-                            <Button x:Name="HangulFormatButton"
-                                    Classes="format hwp"
-                                    Width="72"
-                                    Height="72"
-                                    FontSize="16"
-                                    Tag="Hangul"
-                                    ToolTip.Tip="한글(HWP) 포함/제외"
-                                    Content="HWP"
-                                    Click="FormatFilterButton_OnClick"/>
-                            <Button x:Name="ExcelFormatButton"
-                                    Classes="format excel"
-                                    Width="72"
-                                    Height="72"
-                                    FontSize="13"
-                                    Tag="Excel"
-                                    ToolTip.Tip="Excel 포함/제외"
-                                    Content="EXCEL"
-                                    Click="FormatFilterButton_OnClick"/>
-                        </StackPanel>
-                        <TextBlock x:Name="FormatFilterHintText"
-                                   Margin="0,10,0,0"
+                    <DockPanel Grid.Row="2" Margin="0,12,0,0" LastChildFill="True">
+                        <TextBlock x:Name="ResultCountText"
+                                   DockPanel.Dock="Right"
+                                   Margin="12,0,0,0"
                                    FontSize="13"
+                                   FontWeight="SemiBold"
                                    Foreground="{StaticResource ChipTextBrush}"
-                                   TextAlignment="Center"
-                                   TextWrapping="Wrap"
-                                   Text="종류를 누른 뒤 검색하면 그 파일만 나옵니다. 여러 개를 함께 누를 수 있습니다"/>
-                    </StackPanel>
+                                   VerticalAlignment="Center"
+                                   IsVisible="False"
+                                   Text="0건"/>
+                        <StackPanel>
+                            <StackPanel x:Name="IdleFormatBadges"
+                                        Orientation="Horizontal"
+                                        Spacing="8">
+                                <Button x:Name="PdfFormatButton"
+                                        Classes="format pdf"
+                                        Tag="Pdf"
+                                        ToolTip.Tip="PDF 포함/제외"
+                                        Content="PDF"
+                                        Click="FormatFilterButton_OnClick"/>
+                                <Button x:Name="WordFormatButton"
+                                        Classes="format word"
+                                        Tag="Word"
+                                        ToolTip.Tip="Word 포함/제외"
+                                        Content="WORD"
+                                        Click="FormatFilterButton_OnClick"/>
+                                <Button x:Name="HangulFormatButton"
+                                        Classes="format hwp"
+                                        Tag="Hangul"
+                                        ToolTip.Tip="한글(HWP) 포함/제외"
+                                        Content="HWP"
+                                        Click="FormatFilterButton_OnClick"/>
+                                <Button x:Name="ExcelFormatButton"
+                                        Classes="format excel"
+                                        Tag="Excel"
+                                        ToolTip.Tip="Excel 포함/제외"
+                                        Content="EXCEL"
+                                        Click="FormatFilterButton_OnClick"/>
+                            </StackPanel>
+                            <TextBlock x:Name="FormatFilterHintText"
+                                       Margin="0,8,0,0"
+                                       FontSize="12"
+                                       Foreground="{StaticResource ChipTextBrush}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="False"
+                                       Text=""/>
+                        </StackPanel>
+                    </DockPanel>
 
                     <Grid Grid.Row="3" Margin="0,8,0,0">
                         <StackPanel x:Name="IdleHintPanel"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     MaxWidth="440">
-                            <TextBlock Margin="0,0,0,0"
-                                       FontSize="13"
-                                       Foreground="{StaticResource ChipTextBrush}"
-                                       TextAlignment="Center"
-                                       TextWrapping="Wrap"
-                                       Text="PDF · Word · 한글(HWP) · Excel 파일을 찾을 수 있습니다"/>
-                            <TextBlock Margin="0,12,0,0"
-                                       FontSize="16"
+                            <TextBlock FontSize="16"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TitleBrush}"
                                        TextAlignment="Center"
                                        TextWrapping="Wrap"
                                        Text="파일명이나 본문 단어로 찾아 보세요"/>
-                            <TextBlock Margin="0,8,0,0"
-                                       FontSize="13"
-                                       Foreground="{StaticResource MutedBrush}"
-                                       TextAlignment="Center"
-                                       TextWrapping="Wrap"
-                                       Text="검색하면 근거 문장과 함께 파일이 나타납니다."/>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center"
                                         Margin="0,18,0,0"
@@ -338,31 +332,24 @@
                         </StackPanel>
                     </Grid>
 
-                    <DockPanel Grid.Row="4" Margin="0,16,0,0" LastChildFill="True">
-                        <Button x:Name="ChangeFolderButton"
-                                DockPanel.Dock="Left"
+                    <DockPanel Grid.Row="4" Margin="0,16,0,0" LastChildFill="False">
+                        <Button x:Name="FolderMenuButton"
                                 Classes="secondary"
-                                Content="폴더 변경"
-                                Click="ChangeFolderButton_OnClick"/>
-                        <Button x:Name="SyncIndexButton"
-                                DockPanel.Dock="Left"
-                                Classes="secondary"
-                                Margin="8,0,0,0"
-                                Content="새 파일 인덱싱"
-                                Click="SyncIndexButton_OnClick"/>
-                        <Button x:Name="RebuildIndexButton"
-                                DockPanel.Dock="Left"
-                                Classes="secondary"
-                                Margin="8,0,0,0"
-                                Content="처음부터 다시 인덱싱"
-                                Click="RebuildIndexButton_OnClick"/>
-                        <TextBlock x:Name="IndexedFolderText"
-                                   Margin="16,0,0,0"
-                                   FontSize="12"
-                                   Foreground="{StaticResource MutedBrush}"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"
-                                   TextWrapping="NoWrap"/>
+                                Content="폴더">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="TopEdgeAlignedLeft">
+                                    <MenuItem x:Name="ChangeFolderMenuItem"
+                                              Header="폴더 변경"
+                                              Click="ChangeFolderButton_OnClick"/>
+                                    <MenuItem x:Name="SyncIndexMenuItem"
+                                              Header="새 파일만 읽기"
+                                              Click="SyncIndexButton_OnClick"/>
+                                    <MenuItem x:Name="RebuildIndexMenuItem"
+                                              Header="처음부터 다시 읽기"
+                                              Click="RebuildIndexButton_OnClick"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
                     </DockPanel>
                 </Grid>
 

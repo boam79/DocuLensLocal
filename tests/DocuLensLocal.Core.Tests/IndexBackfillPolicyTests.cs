@@ -58,6 +58,37 @@ public class IndexBackfillPolicyTests
 public class SearchStatusFormatterTests
 {
     [Fact]
+    public void coverage_chip_omits_ocr_when_engine_is_missing()
+    {
+        var text = SearchStatusFormatter.CoverageChip(new IndexCoverage(276, 0, 0, OcrEngineAvailable: false));
+
+        Assert.Equal("276개", text);
+        Assert.DoesNotContain("OCR", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void coverage_chip_without_documents_is_short()
+    {
+        Assert.Equal("문서 없음", SearchStatusFormatter.CoverageChip(new IndexCoverage(0, 0, 0, false)));
+    }
+
+    [Fact]
+    public void coverage_chip_is_short_when_ocr_pages_exist()
+    {
+        var text = SearchStatusFormatter.CoverageChip(new IndexCoverage(276, 200, 15, OcrEngineAvailable: true));
+
+        Assert.Equal("276개 · OCR 있음", text);
+        Assert.DoesNotContain("본문", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void hit_count_is_a_short_korean_label()
+    {
+        Assert.Equal("12건", SearchStatusFormatter.HitCount(12));
+        Assert.Equal("0건", SearchStatusFormatter.HitCount(0));
+    }
+
+    [Fact]
     public void coverage_does_not_claim_ocr_when_no_engine_is_available()
     {
         var text = SearchStatusFormatter.Coverage(new IndexCoverage(276, 0, 0, OcrEngineAvailable: false));
@@ -113,18 +144,26 @@ public class SearchStatusFormatterTests
         Assert.Contains("본문", text, StringComparison.Ordinal);
         Assert.DoesNotContain("다시 인덱싱", text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void empty_results_without_documents_point_to_the_folder_menu()
+    {
+        var text = SearchStatusFormatter.EmptyResults(documentCount: 0, bodyCount: 0, indexingNow: false);
+
+        Assert.Contains("폴더", text, StringComparison.Ordinal);
+        Assert.Contains("처음부터 다시 읽기", text, StringComparison.Ordinal);
+    }
 }
 
 public class SearchIdleCopyTests
 {
     [Fact]
-    public void idle_hint_names_the_indexed_document_count()
+    public void idle_hint_is_the_headline_when_documents_exist()
     {
         var hint = SearchIdleCopy.Hint(new IndexCoverage(276, 276, 707, true));
 
         Assert.Equal("파일명이나 본문 단어로 찾아 보세요", SearchIdleCopy.Headline);
-        Assert.Contains("276개 문서", hint, StringComparison.Ordinal);
-        Assert.Contains("자동으로", hint, StringComparison.Ordinal);
+        Assert.Equal(SearchIdleCopy.Headline, hint);
         Assert.Contains("버스 광고", SearchIdleCopy.Examples);
         Assert.Contains("부대", SearchIdleCopy.Examples);
     }

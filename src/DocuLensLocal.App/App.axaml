@@ -148,8 +148,28 @@
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="Button.ghost:pointerover /template/ Border#Bd">
-            <Setter Property="Background" Value="#F1F5F9"/>
+        <Style Selector="Button.folder-link">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <ControlTemplate TargetType="Button">
+                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Left"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.folder-link:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentDarkBrush}"/>
         </Style>
 
         <Style Selector="Button.example">
@@ -180,16 +200,17 @@
         </Style>
 
         <Style Selector="Button.format">
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
                             BorderBrush="Transparent"
-                            BorderThickness="3"
-                            CornerRadius="20"
+                            BorderThickness="1.5"
+                            CornerRadius="16"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
