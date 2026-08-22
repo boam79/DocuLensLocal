@@ -490,11 +490,9 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 ## Current Status / Progress Tracking (2026-08-22 고도화 제안)
 
-- 모드: **Executor** (P0 검색 결과 — 사용자 확인 전 완료 표시 금지)
-- 범위: 근거 문장 검색어 강조, **열기**, **폴더에서 보기**, 종류 칸 색, 상위 폴더명·날짜. P1~P3는 하지 않음.
-- `dotnet test` 166 통과. 버전 0.1.25.
-- **v0.1.25 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.25/DocuLensLocal-win-Setup.exe
-- PR: https://github.com/boam79/DocuLensLocal/pull/3
+- 모드: **Executor** (종류 여러 개 선택 — 사용자 확인 전 완료 표시 금지)
+- 범위: PDF/WORD/HWP/EXCEL을 여러 개 동시에 눌러 그 종류들만 검색. P1·날짜 필터는 하지 않음.
+- 버전 예정: 0.1.26
 
 ## Executor's Feedback or Assistance Requests
 

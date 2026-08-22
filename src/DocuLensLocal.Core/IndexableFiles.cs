@@ -76,16 +76,33 @@ public static class IndexableFiles
 
     public static bool Matches(string path, SearchFormatFilter filter)
     {
-        var kind = KindOf(path);
-        return filter switch
+        if (filter == SearchFormatFilter.All)
         {
-            SearchFormatFilter.All => true,
-            SearchFormatFilter.Pdf => kind == IndexableFileKind.Pdf,
-            SearchFormatFilter.Word => kind is IndexableFileKind.Docx or IndexableFileKind.Doc,
-            SearchFormatFilter.Hangul => kind is IndexableFileKind.Hwp or IndexableFileKind.Hwpx,
-            SearchFormatFilter.Excel => kind is IndexableFileKind.Xlsx or IndexableFileKind.Xlsm or IndexableFileKind.Xls,
-            _ => false,
-        };
+            return true;
+        }
+
+        var kind = KindOf(path);
+        if (SearchFormatFilters.Includes(filter, SearchFormatFilter.Pdf) && kind == IndexableFileKind.Pdf)
+        {
+            return true;
+        }
+
+        if (SearchFormatFilters.Includes(filter, SearchFormatFilter.Word) && kind is IndexableFileKind.Docx or IndexableFileKind.Doc)
+        {
+            return true;
+        }
+
+        if (SearchFormatFilters.Includes(filter, SearchFormatFilter.Hangul) && kind is IndexableFileKind.Hwp or IndexableFileKind.Hwpx)
+        {
+            return true;
+        }
+
+        if (SearchFormatFilters.Includes(filter, SearchFormatFilter.Excel) && kind is IndexableFileKind.Xlsx or IndexableFileKind.Xlsm or IndexableFileKind.Xls)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public static string Badge(string path) => KindOf(path) switch

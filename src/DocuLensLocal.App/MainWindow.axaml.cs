@@ -446,7 +446,7 @@ public partial class MainWindow : Window
 
     private void SetFormatSelected(Button button, SearchFormatFilter format)
     {
-        var selected = _formatFilter == format;
+        var selected = SearchFormatFilters.Includes(_formatFilter, format);
         button.Classes.Set("selected", selected);
         button.Opacity = _formatFilter != SearchFormatFilter.All && !selected ? 0.45 : 1;
     }

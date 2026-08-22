@@ -39,6 +39,9 @@ public class IndexableFilesTests
     [InlineData("/docs/매크로.xlsm", SearchFormatFilter.Excel, true)]
     [InlineData("/docs/old.xls", SearchFormatFilter.Excel, true)]
     [InlineData("/docs/견적.xlsx", SearchFormatFilter.Hangul, false)]
+    [InlineData("/docs/a.pdf", SearchFormatFilter.Pdf | SearchFormatFilter.Excel, true)]
+    [InlineData("/docs/견적.xlsx", SearchFormatFilter.Pdf | SearchFormatFilter.Excel, true)]
+    [InlineData("/docs/memo.docx", SearchFormatFilter.Pdf | SearchFormatFilter.Excel, false)]
     public void matches_search_format_groups(string path, SearchFormatFilter filter, bool expected)
     {
         Assert.Equal(expected, IndexableFiles.Matches(path, filter));
@@ -233,6 +236,15 @@ public class OfficeBodySearchTests : IDisposable
             hit.Document.FilePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
             || hit.Document.FilePath.EndsWith(".xls", StringComparison.OrdinalIgnoreCase)));
         Assert.DoesNotContain(excel, hit => hit.Document.FilePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
+
+        var pdfAndExcel = service.Search("busad", SearchFormatFilter.Pdf | SearchFormatFilter.Excel);
+        Assert.Equal(3, pdfAndExcel.Count);
+        Assert.All(pdfAndExcel, hit => Assert.True(
+            hit.Document.FilePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".xls", StringComparison.OrdinalIgnoreCase)));
+        Assert.DoesNotContain(pdfAndExcel, hit => hit.Document.FilePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(pdfAndExcel, hit => hit.Document.FilePath.EndsWith(".hwp", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
