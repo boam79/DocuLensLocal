@@ -188,6 +188,7 @@
 - OCR 속도: 페이지마다 `new TesseractEngine` 하지 말 것. `kor+eng` 동시 로드는 한국어만보다 훨씬 느리다. 회색조 120dpi + JPEG면 검색용으로 충분하다.
 - 엑셀·HWP가 「인덱싱 안 됨」이면 먼저 검색 화면 오른쪽 아래 **실제 폴더 경로**를 본다. 파일은 `인수인계`에 있고 인덱스는 `인수인계\계약서_스캔`이면 상위 폴더 파일은 안 읽힌다. 하위만 재귀한다.
 - 확장자 필터 버튼은 Idle 안내 안에 두면 검색 후 사라진다. 검색창 아래에 항상 두고, 이미 검색한 뒤에도 누르면 그 종류로 다시 찾게 한다.
+- 검색 결과 행은 더블클릭만 있으면 사용자가 못 연다. **열기** 버튼과 검색어 강조를 같이 둔다. 전체 경로 대신 상위 폴더명이 폴더 오인(계약서_스캔 vs 인수인계)을 더 잘 보여 준다.
 
 ## Background and Motivation (2026-08-20 Word·HWP)
 
@@ -492,4 +493,10 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 모드: **Executor** (P0 검색 결과 — 사용자 확인 전 완료 표시 금지)
 - 범위: 근거 문장 검색어 강조, **열기**, **폴더에서 보기**, 종류 칸 색, 상위 폴더명·날짜. P1~P3는 하지 않음.
 - `dotnet test` 166 통과. 버전 0.1.25.
+- **v0.1.25 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.25/DocuLensLocal-win-Setup.exe
+- PR: https://github.com/boam79/DocuLensLocal/pull/3
+
+## Executor's Feedback or Assistance Requests
+
+- 2026-08-22 (0.1.25 Executor): 검색 결과 P0. 검색어 굵게, 열기/폴더에서 보기, 종류 색, 상위 폴더·날짜. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
 
