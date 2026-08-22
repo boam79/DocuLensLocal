@@ -435,9 +435,13 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 - 모드: **Executor** (확장자 필터 — 사용자 확인 전 완료 표시 금지)
 - 브랜치: `cursor/pdf-body-ocr-search-3495`
+- `dotnet test` 147 통과 (감시 타이밍 테스트 1건은 재실행 시 통과). 버전 0.1.24.
+- **v0.1.24 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.24/DocuLensLocal-win-Setup.exe
+- PR: https://github.com/boam79/DocuLensLocal/pull/3
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-22 (0.1.24 Executor): 검색창 아래 PDF/WORD/HWP/EXCEL을 눌러 그 종류만 검색. 같은 칸을 다시 누르면 전체. 설치본 v0.1.24 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
 - 2026-08-22 (확장자 검색 Executor): 가운데 형식 마크를 토글 버튼으로 바꿔, 선택한 확장자만 검색되게 구현 중.
 - 2026-08-20 (0.1.21 Executor): Excel이 인덱싱 대상에 없어 견적·계약 엑셀을 건너뛰고 있었다. xlsx/xlsm ZIP 셀 글자 + xls SST, 글자 부족 시 그림 OCR. 설치본 v0.1.21 업로드. Setup.exe를 `-Wait`로 실행하지 않음.
 
