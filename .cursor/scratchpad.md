@@ -511,4 +511,25 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - `dotnet test` 175 통과. 버전 0.1.27.
 - **v0.1.27 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.27/DocuLensLocal-win-Setup.exe
 
+## Background and Motivation (2026-08-22 정보 탭)
+
+사용자: 0.1.27 **정보** 탭 스크린샷을 보고 디자인 제안을 요청. Planner만. 구현 없음.
+
+원인: 정보 탭이 제품명+버전 이력+업데이트뿐이라, 매일 「이 폴더·몇 건」을 확인하는 화면이 아님. 검색 탭 커버리지 칩을 짧게 줄인 뒤 자세한 숫자의 자리가 없음.
+
+## Key Challenges and Analysis (정보 탭)
+
+- 비기술 사용자. GitHub·LOCALAPPDATA·설정 화면은 넣지 않음.
+- 검색 탭과 폴더 경로가 겹쳐도, 정보 탭은 「상태 확인」용으로 한 번 더 보여 주는 편이 낫다.
+- 버전 이력 27줄은 매일 필요가 없음. 최근 5개 + 펼치기면 충분.
+- 업데이트 큰 버튼은 유지. 캡션만 쉽게.
+
+## High-level Task Breakdown (정보 탭, 미승인)
+
+정보 1안(추천): 상태 카드(폴더·건수·본문/OCR) + 팁 세 줄 + 이력 최근 5개 + 업데이트 문구 변경.
+정보 2안: 업데이트 중심, 이력은 숨김.
+정보 3안: 문구·이력 길이만.
+
+사용자 선택 후 Executor. 지금은 Planner 제안만.
+
 
