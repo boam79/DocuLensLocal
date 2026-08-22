@@ -501,11 +501,14 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 2026-08-22 (문서 Executor): GitHub `docs/`에 사용 안내·검색·인덱싱·설치·FAQ·구조·개발·고도화·이력을 넣음. 앱 버전은 0.1.26 유지(설치본 없음).
 - 2026-08-22 (0.1.26 Executor): 종류 버튼을 여러 개 함께 선택. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
 - 2026-08-22 (0.1.25 Executor): 검색 결과 P0. 검색어 굵게, 열기/폴더에서 보기, 종류 색, 상위 폴더·날짜. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
-- 2026-08-22 (0.1.27 Executor): **1안만** 진행. 검색 화면을 도구처럼 정리. 종류 알약, 폴더 경로를 제목 아래(클릭 시 탐색기), 아래 세 버튼을 **폴더** 메뉴로, 다시 읽기는 확인 후, 검색 후 건수, 짧은 커버리지 칩. 2·3·4안은 하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+- 2026-08-22 (0.1.27 Executor): **1안만** 진행. 검색 화면을 도구처럼 정리. 종류 알약, 폴더 경로를 제목 아래(클릭 시 탐색기), 아래 세 버튼을 **폴더** 메뉴로, 다시 읽기는 확인 후, 검색 후 건수, 짧은 커버리지 칩. 2·3·4안은 하지 않음. `dotnet test` 175 통과. **v0.1.27 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.27/DocuLensLocal-win-Setup.exe
 
 ## Current Status / Progress Tracking (2026-08-22 1안)
 
 - 모드: **Executor** (검색 화면 1안 — 사용자 확인 전 완료 표시 금지)
 - 범위: 1안만. 최초 실행 한 버튼·진행 막대(2안), 결과 줄 아이콘(3안), 정보 탭 상태(4안)는 제외.
-- 버전 선언 0.1.27.
+- `dotnet test` 175 통과. 버전 0.1.27.
+- **v0.1.27 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.27/DocuLensLocal-win-Setup.exe
+
 
