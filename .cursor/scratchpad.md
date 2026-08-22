@@ -497,6 +497,7 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-22 (Planner): 프런트 UI/UX 제안. 구현 없음. 문서 `docs/ui-ux-제안.md`. 추천은 검색 화면 1안(작은 종류 알약·폴더 경로 위·아래 버튼 정리).
 - 2026-08-22 (문서 Executor): GitHub `docs/`에 사용 안내·검색·인덱싱·설치·FAQ·구조·개발·고도화·이력을 넣음. 앱 버전은 0.1.26 유지(설치본 없음).
 - 2026-08-22 (0.1.26 Executor): 종류 버튼을 여러 개 함께 선택. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
 - 2026-08-22 (0.1.25 Executor): 검색 결과 P0. 검색어 굵게, 열기/폴더에서 보기, 종류 색, 상위 폴더·날짜. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.

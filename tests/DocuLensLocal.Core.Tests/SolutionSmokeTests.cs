@@ -149,6 +149,7 @@ public class SolutionSmokeTests
         Assert.Contains("프로그램-구조.md", index, StringComparison.Ordinal);
         Assert.Contains("개발.md", index, StringComparison.Ordinal);
         Assert.Contains("고도화.md", index, StringComparison.Ordinal);
+        Assert.Contains("ui-ux-제안.md", index, StringComparison.Ordinal);
         Assert.Contains("변경-이력.md", index, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(docs, "검색.md")));
         var search = File.ReadAllText(Path.Combine(docs, "검색.md"));
