@@ -20,6 +20,30 @@ public class EvidenceSnippetTests
     {
         Assert.Equal(string.Empty, EvidenceSnippet.From("  ", ["버스"]));
     }
+
+    [Fact]
+    public void highlight_marks_each_token_in_the_snippet()
+    {
+        var spans = EvidenceSnippet.Highlight("본 버스 광고 계약", ["버스", "광고"]);
+
+        Assert.Equal(
+            [
+                new SnippetSpan("본 ", false),
+                new SnippetSpan("버스", true),
+                new SnippetSpan(" ", false),
+                new SnippetSpan("광고", true),
+                new SnippetSpan(" 계약", false),
+            ],
+            spans);
+    }
+
+    [Fact]
+    public void highlight_without_tokens_is_plain_text()
+    {
+        var spans = EvidenceSnippet.Highlight("버스 광고", []);
+
+        Assert.Equal([new SnippetSpan("버스 광고", false)], spans);
+    }
 }
 
 public class PdfBodySearchTests : IDisposable

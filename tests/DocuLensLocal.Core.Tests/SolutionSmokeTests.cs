@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.24</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.25</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -53,6 +53,10 @@ public class SolutionSmokeTests
         Assert.Contains("x:Name=\"SyncIndexButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"새 파일 인덱싱\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"폴더 변경\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"열기\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"폴더에서 보기\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("HighlightedTextBlock", axaml, StringComparison.Ordinal);
+        Assert.Contains("Classes=\"result-badge\"", axaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -83,6 +87,9 @@ public class SolutionSmokeTests
         Assert.Contains("FormatFilterButton_OnClick", window, StringComparison.Ordinal);
         Assert.Contains("_formatFilter", window, StringComparison.Ordinal);
         Assert.Contains("Search(query!, _formatFilter)", window, StringComparison.Ordinal);
+        Assert.Contains("OpenResultButton_OnClick", window, StringComparison.Ordinal);
+        Assert.Contains("RevealResultButton_OnClick", window, StringComparison.Ordinal);
+        Assert.Contains("LocationLine", window, StringComparison.Ordinal);
     }
 
     [Fact]

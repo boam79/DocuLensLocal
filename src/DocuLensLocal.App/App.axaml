@@ -88,6 +88,43 @@
             <Setter Property="Opacity" Value="0.45"/>
         </Style>
 
+        <Style Selector="Button.compact">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+
+        <Style Selector="Border.result-badge">
+            <Setter Property="Background" Value="{StaticResource ChipBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentDarkBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.pdf">
+            <Setter Property="Background" Value="{StaticResource PdfBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.pdf TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PdfBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.word">
+            <Setter Property="Background" Value="{StaticResource WordBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.word TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource WordBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.hwp">
+            <Setter Property="Background" Value="{StaticResource HwpBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.hwp TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource HwpBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.excel">
+            <Setter Property="Background" Value="{StaticResource ExcelBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.excel TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ExcelBadgeTextBrush}"/>
+        </Style>
+
         <Style Selector="Button.ghost">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -724,14 +725,28 @@ public partial class MainWindow : Window
         }
 
         var all = _indexing.GetIndexedDocuments();
-        var rows = _indexing.Search(query!, _formatFilter).Select(hit => new SearchResultRow
+        var tokens = FilenameSearchQuery.ExtractTokens(query);
+        var rows = _indexing.Search(query!, _formatFilter).Select(hit =>
         {
-            FileName = Path.GetFileName(hit.Document.FilePath),
-            FilePath = hit.Document.FilePath,
-            KindLabel = IndexableFiles.Badge(hit.Document.FilePath),
-            Snippet = hit.Snippet,
-            MatchLabel = hit.MatchLabelKo,
-            HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
+            var path = hit.Document.FilePath;
+            var fileName = Path.GetFileName(path);
+            var group = SearchResultDisplay.KindGroup(path);
+            return new SearchResultRow
+            {
+                FileName = fileName,
+                FilePath = path,
+                KindLabel = IndexableFiles.Badge(path),
+                Snippet = hit.Snippet,
+                MatchLabel = hit.MatchLabelKo,
+                HasSnippet = !string.IsNullOrWhiteSpace(hit.Snippet),
+                LocationLine = SearchResultDisplay.LocationLine(path, hit.Document.LastWriteTimeUtc),
+                IsPdf = group == SearchFormatFilter.Pdf,
+                IsWord = group == SearchFormatFilter.Word,
+                IsHangul = group == SearchFormatFilter.Hangul,
+                IsExcel = group == SearchFormatFilter.Excel,
+                FileNameSpans = EvidenceSnippet.Highlight(fileName, tokens),
+                SnippetSpans = EvidenceSnippet.Highlight(hit.Snippet, tokens),
+            };
         }).ToList();
 
         IndexedSummaryText.Text = FormatCoverage(all);
@@ -941,24 +956,70 @@ public partial class MainWindow : Window
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (SearchResultsList.SelectedItem is not SearchResultRow row || !File.Exists(row.FilePath))
+        if (SearchResultsList.SelectedItem is SearchResultRow row)
         {
+            OpenIndexedFile(row.FilePath);
+        }
+    }
+
+    private void OpenResultButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: SearchResultRow row })
+        {
+            OpenIndexedFile(row.FilePath);
+        }
+
+        e.Handled = true;
+    }
+
+    private void RevealResultButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: SearchResultRow row })
+        {
+            RevealIndexedFile(row.FilePath);
+        }
+
+        e.Handled = true;
+    }
+
+    private void OpenIndexedFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            ShowFileActionError("파일을 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 아래 폴더 경로를 확인해 보세요.");
             return;
         }
 
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(row.FilePath)
-            {
-                UseShellExecute = true,
-            });
+            Process.Start(LocalFileActions.Open(path));
         }
         catch (Exception ex)
         {
-            SearchEmptyText.Text = $"파일을 열지 못했습니다: {ex.Message}";
-            ApplySearchListMode(SearchListMode.Empty);
+            ShowFileActionError("파일을 열 수 없습니다", ex.Message);
         }
     }
+
+    private void RevealIndexedFile(string path)
+    {
+        if (!File.Exists(path) && !Directory.Exists(Path.GetDirectoryName(path) ?? string.Empty))
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", "파일이 없거나 옮겨졌습니다. 아래 폴더 경로를 확인해 보세요.");
+            return;
+        }
+
+        try
+        {
+            Process.Start(LocalFileActions.Reveal(path));
+        }
+        catch (Exception ex)
+        {
+            ShowFileActionError("폴더를 열 수 없습니다", ex.Message);
+        }
+    }
+
+    private void ShowFileActionError(string title, string body) =>
+        _ = MessageDialog.AlertAsync(this, title, body);
 
     private static string FormatCompleteStatus(int errorCount) =>
         errorCount > 0 ? $"완료 (오류 {errorCount}건)" : "완료";
@@ -988,6 +1049,13 @@ public partial class MainWindow : Window
         public string Snippet { get; init; } = string.Empty;
         public string MatchLabel { get; init; } = string.Empty;
         public bool HasSnippet { get; init; }
+        public string LocationLine { get; init; } = string.Empty;
+        public bool IsPdf { get; init; }
+        public bool IsWord { get; init; }
+        public bool IsHangul { get; init; }
+        public bool IsExcel { get; init; }
+        public IReadOnlyList<SnippetSpan> FileNameSpans { get; init; } = [];
+        public IReadOnlyList<SnippetSpan> SnippetSpans { get; init; } = [];
     }
 
     private sealed class HistoryRow

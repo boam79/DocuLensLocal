@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:DocuLensLocal.App"
         x:Class="DocuLensLocal.App.MainWindow"
         Title="DocuLens Local"
         Height="680"
@@ -258,19 +259,33 @@
                                 <DataTemplate>
                                     <DockPanel LastChildFill="True">
                                         <Border DockPanel.Dock="Left"
+                                                Classes="result-badge"
+                                                Classes.pdf="{Binding IsPdf}"
+                                                Classes.word="{Binding IsWord}"
+                                                Classes.hwp="{Binding IsHangul}"
+                                                Classes.excel="{Binding IsExcel}"
                                                 Width="40"
                                                 Height="40"
                                                 CornerRadius="10"
-                                                Background="{StaticResource ChipBrush}"
                                                 VerticalAlignment="Top"
                                                 Margin="0,0,12,0">
                                             <TextBlock Text="{Binding KindLabel}"
                                                        FontSize="9"
                                                        FontWeight="Bold"
-                                                       Foreground="{StaticResource AccentDarkBrush}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
                                         </Border>
+                                        <StackPanel DockPanel.Dock="Right"
+                                                    VerticalAlignment="Top"
+                                                    Margin="12,0,0,0"
+                                                    Spacing="6">
+                                            <Button Classes="primary compact"
+                                                    Content="열기"
+                                                    Click="OpenResultButton_OnClick"/>
+                                            <Button Classes="secondary compact"
+                                                    Content="폴더에서 보기"
+                                                    Click="RevealResultButton_OnClick"/>
+                                        </StackPanel>
                                         <StackPanel>
                                             <DockPanel LastChildFill="True">
                                                 <Border DockPanel.Dock="Right"
@@ -284,22 +299,25 @@
                                                                Foreground="{StaticResource ChipTextBrush}"
                                                                Text="{Binding MatchLabel}"/>
                                                 </Border>
-                                                <TextBlock FontWeight="SemiBold"
-                                                           FontSize="14"
-                                                           Foreground="{StaticResource TitleBrush}"
-                                                           Text="{Binding FileName}"/>
+                                                <app:HighlightedTextBlock FontWeight="SemiBold"
+                                                                           FontSize="14"
+                                                                           Foreground="{StaticResource TitleBrush}"
+                                                                           TextWrapping="NoWrap"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           Spans="{Binding FileNameSpans}"/>
                                             </DockPanel>
-                                            <TextBlock Margin="0,4,0,0"
-                                                       FontSize="13"
-                                                       Foreground="{StaticResource TitleBrush}"
-                                                       TextWrapping="Wrap"
-                                                       IsVisible="{Binding HasSnippet}"
-                                                       Text="{Binding Snippet}"/>
+                                            <app:HighlightedTextBlock Margin="0,4,0,0"
+                                                                       FontSize="13"
+                                                                       Foreground="{StaticResource TitleBrush}"
+                                                                       TextWrapping="Wrap"
+                                                                       IsVisible="{Binding HasSnippet}"
+                                                                       Spans="{Binding SnippetSpans}"/>
                                             <TextBlock Margin="0,4,0,0"
                                                        FontSize="12"
                                                        Foreground="{StaticResource MutedBrush}"
-                                                       TextWrapping="Wrap"
-                                                       Text="{Binding FilePath}"/>
+                                                       TextWrapping="NoWrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding LocationLine}"/>
                                         </StackPanel>
                                     </DockPanel>
                                 </DataTemplate>
