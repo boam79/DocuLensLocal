@@ -539,11 +539,14 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - `dotnet test` 183 통과. 버전 0.1.28.
 - **v0.1.28 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.28/DocuLensLocal-win-Setup.exe
 
+- 2026-08-22 (0.1.29 Executor): 새 버전이 있으면 팝업에 버전·짧은 내역. Setup.exe로 올린 뒤에도 내역 팝업. `dotnet test` 188 통과. **v0.1.29 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.29/DocuLensLocal-win-Setup.exe
+
 ## Current Status / Progress Tracking (2026-08-22 업데이트 팝업)
 
 - 모드: **Executor** (업데이트 항목 팝업 — 사용자 확인 전 완료 표시 금지)
-- 범위: 새 버전이 있으면 팝업에 버전·짧은 내역을 보여 줌. Setup.exe로 올린 뒤에도 내역 팝업. 보안 1안은 하지 않음.
-- 버전 선언 0.1.29.
+- `dotnet test` 188 통과. 버전 0.1.29.
+- **v0.1.29 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.29/DocuLensLocal-win-Setup.exe
 
 ## Background and Motivation (2026-08-22 보안)
 
