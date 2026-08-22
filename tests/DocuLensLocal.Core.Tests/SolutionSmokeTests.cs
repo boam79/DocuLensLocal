@@ -135,6 +135,27 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<ContentPresenter HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\"/>", axaml, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void github_docs_folder_lists_product_topics()
+    {
+        var docs = Path.Combine(FindRepoRoot(), "docs");
+        var index = File.ReadAllText(Path.Combine(docs, "README.md"));
+
+        Assert.Contains("사용-안내.md", index, StringComparison.Ordinal);
+        Assert.Contains("검색.md", index, StringComparison.Ordinal);
+        Assert.Contains("인덱싱.md", index, StringComparison.Ordinal);
+        Assert.Contains("설치와-업데이트.md", index, StringComparison.Ordinal);
+        Assert.Contains("자주-묻는-질문.md", index, StringComparison.Ordinal);
+        Assert.Contains("프로그램-구조.md", index, StringComparison.Ordinal);
+        Assert.Contains("개발.md", index, StringComparison.Ordinal);
+        Assert.Contains("고도화.md", index, StringComparison.Ordinal);
+        Assert.Contains("변경-이력.md", index, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(docs, "검색.md")));
+        var search = File.ReadAllText(Path.Combine(docs, "검색.md"));
+        Assert.Contains("여러 개를 함께", search, StringComparison.Ordinal);
+        Assert.Contains("폴더에서 보기", search, StringComparison.Ordinal);
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

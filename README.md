@@ -9,6 +9,7 @@ Windows 10/11용 **로컬 문서 검색기**입니다. 탐색기 파일명 검�
 - 설치 대상: Windows 10/11 64비트
 - 스택: .NET 10, Avalonia, PdfPig, HwpLibSharp, 내장 Tesseract(kor/eng), 로컬 SQLite
 - 저장소: https://github.com/boam79/DocuLensLocal
+- 문서: [docs/](docs/README.md) (사용 안내, 검색, 인덱싱, 설치, 개발, 고도화)
 
 ## 탐색기와 다른 점
 
