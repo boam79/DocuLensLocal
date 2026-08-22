@@ -493,8 +493,10 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 - 모드: **Executor** (종류 여러 개 선택 — 사용자 확인 전 완료 표시 금지)
 - 범위: PDF/WORD/HWP/EXCEL을 여러 개 동시에 눌러 그 종류들만 검색. P1·날짜 필터는 하지 않음.
 - `dotnet test` 169 통과. 버전 0.1.26.
+- **v0.1.26 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.26/DocuLensLocal-win-Setup.exe
 
 ## Executor's Feedback or Assistance Requests
 
+- 2026-08-22 (0.1.26 Executor): 종류 버튼을 여러 개 함께 선택. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
 - 2026-08-22 (0.1.25 Executor): 검색 결과 P0. 검색어 굵게, 열기/폴더에서 보기, 종류 색, 상위 폴더·날짜. 설치본 업로드. Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 요청.
 
