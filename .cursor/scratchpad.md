@@ -564,6 +564,21 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 사용자 선택 후 Executor.
 
+## Background and Motivation (2026-08-28 이미지 검색)
+
+사용자: 파일명이 아니라 이미지를 **분석**해서 키워드로 찾고 싶다. Planner만. 구현 없음.
+
+지금: 단독 `.jpg`/`.png`는 건너뜀. PDF·Office 안 스캔만 OCR.
+
+## High-level Task Breakdown (이미지 검색, 미승인)
+
+이미지 1안: 사진 파일 OCR (기존 Tesseract). 글자 있는 사진.
+이미지 2안: 로컬 그림 모델 키워드. 글자 없는 현장 사진. 설치본 커짐.
+이미지 3안: 클라우드 비전 — 하지 않음.
+
+글자 사진이면 1안, 현장 사진이면 1안+2안.
+
+
 
 
 
