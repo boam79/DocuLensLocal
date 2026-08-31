@@ -609,6 +609,14 @@ NPOI/ClosedXML은 쓰지 않는다(취약점·의존성). xlsx는 ZIP XML, xls�
 
 사용자 선택 후 Executor. 한 번에 전부 넣지 않음.
 
+## Key Challenges and Analysis (2026-08-31 PPT OCR · CLIP 정확도)
+
+사용자: PPT도 OCR 되는지, CLIP 정확도는 어떤지. Planner만.
+
+PPT: 지금은 미지원. 5안이면 타이핑 글자는 ZIP XML, 스캔 붙인 슬라이드는 Word와 같은 Tesseract(글자 적고 그림 있을 때, 최대 30장). .pptx 우선, 구형 .ppt는 나중. CLIP으로 PPT 글자 읽지 않음.
+
+CLIP 정확도: 큰 물체 영어 공개시험 약 60%대. 세부·한국어 직접 비교는 약함. 영어 프롬프트→한국어 저장. 사람 눈/ChatGPT 아님.
+
 
 
 
