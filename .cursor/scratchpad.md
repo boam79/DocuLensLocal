@@ -619,11 +619,17 @@ CLIP 정확도: 큰 물체 영어 공개시험 약 60%대. 세부·한국어 직
 
 ## Current Status / Progress Tracking (2026-08-31 고도화 5안)
 
-- 모드: **Executor** (PowerPoint 본문·OCR — 사용자 확인 전 완료 표시 금지)
-- 범위: 고도화 5안만. `.pptx` `.pptm` `.ppt`. 종류 칸 PPT. 이미지 1·2안, 고도화 1~4·6안은 제외.
+- 모드: **Planner** (사용자 확인 완료 — 고도화 5안 PowerPoint)
 - `dotnet test` 206 통과. 버전 0.1.30.
-- **v0.1.30 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
-  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.30/DocuLensLocal-win-Setup.exe
+- **v0.1.30 uploaded.** GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.30/DocuLensLocal-win-Setup.exe
+
+## Background and Motivation (2026-08-31 CLIP 자세히)
+
+사용자: CLIP이 무엇인지, 정확성을 더 자세히. Planner만. 구현 없음.
+
+CLIP: 그림-글 맞추기. 인터넷 영어 사진·설명으로 배움. 닫힌 사전, 영어 프롬프트, 저장은 한국어. 대화·글자 읽기 아님. 무료(로컬 파일).
+
+정확도: ImageNet 영어 제로샷 작은 모델 ~63%, 큰 모델 ~75%. 큰 물체는 그럭저럭. 세부·고유명사·한글 직접 비교는 약함. 거짓 양성/음성은 점수 문턱. 우리 현장 사진은 아직 미측정.
 
 
 
