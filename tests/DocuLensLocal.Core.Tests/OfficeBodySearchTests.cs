@@ -14,9 +14,13 @@ public class IndexableFilesTests
     [InlineData("견적.xlsx", IndexableFileKind.Xlsx, "XLSX")]
     [InlineData("매크로.XLSM", IndexableFileKind.Xlsm, "XLSM")]
     [InlineData("old.xls", IndexableFileKind.Xls, "XLS")]
+    [InlineData("회의.PPTX", IndexableFileKind.Pptx, "PPTX")]
+    [InlineData("매크로.pptm", IndexableFileKind.Pptm, "PPTM")]
+    [InlineData("old.ppt", IndexableFileKind.Ppt, "PPT")]
     [InlineData("notes.txt", IndexableFileKind.Unknown, "파일")]
     [InlineData("~$lock.docx", IndexableFileKind.Unknown, "파일")]
     [InlineData("~$lock.xlsx", IndexableFileKind.Unknown, "파일")]
+    [InlineData("~$lock.pptx", IndexableFileKind.Unknown, "파일")]
     [InlineData("~lock.hwp", IndexableFileKind.Unknown, "파일")]
     public void classifies_supported_extensions_and_skips_lock_files(string path, IndexableFileKind kind, string badge)
     {
@@ -39,6 +43,10 @@ public class IndexableFilesTests
     [InlineData("/docs/매크로.xlsm", SearchFormatFilter.Excel, true)]
     [InlineData("/docs/old.xls", SearchFormatFilter.Excel, true)]
     [InlineData("/docs/견적.xlsx", SearchFormatFilter.Hangul, false)]
+    [InlineData("/docs/회의.pptx", SearchFormatFilter.Ppt, true)]
+    [InlineData("/docs/매크로.pptm", SearchFormatFilter.Ppt, true)]
+    [InlineData("/docs/old.ppt", SearchFormatFilter.Ppt, true)]
+    [InlineData("/docs/회의.pptx", SearchFormatFilter.Excel, false)]
     [InlineData("/docs/a.pdf", SearchFormatFilter.Pdf | SearchFormatFilter.Excel, true)]
     [InlineData("/docs/견적.xlsx", SearchFormatFilter.Pdf | SearchFormatFilter.Excel, true)]
     [InlineData("/docs/memo.docx", SearchFormatFilter.Pdf | SearchFormatFilter.Excel, false)]
@@ -90,15 +98,18 @@ public class OfficeBodySearchTests : IDisposable
         TestOfficeFactory.WriteHwp(_docsRoot, "hangul.hwp", "hwp body");
         TestOfficeFactory.WriteXlsx(_docsRoot, "quote.xlsx", "xlsx body");
         TestOfficeFactory.WriteLegacyXls(_docsRoot, "legacy.xls", "xls body");
+        TestOfficeFactory.WritePptx(_docsRoot, "deck.pptx", "pptx body");
+        TestOfficeFactory.WriteLegacyPpt(_docsRoot, "legacy.ppt", "ppt body");
         File.WriteAllText(Path.Combine(_docsRoot, "notes.txt"), "not a document");
         File.WriteAllText(Path.Combine(_docsRoot, "image.png"), "nope");
         TestOfficeFactory.WriteDocx(_docsRoot, "~$memo.docx", "should skip");
+        TestOfficeFactory.WritePptx(_docsRoot, "~$deck.pptx", "should skip");
 
         var service = new IndexingService(_userData);
         var result = await service.Start(_docsRoot);
 
-        Assert.Equal(7, result.FoundCount);
-        Assert.Equal(7, result.ProcessedCount);
+        Assert.Equal(9, result.FoundCount);
+        Assert.Equal(9, result.ProcessedCount);
         Assert.Empty(result.Errors);
         Assert.DoesNotContain(result.Documents, doc => doc.FilePath.Contains("notes.txt", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(result.Documents, doc => Path.GetFileName(doc.FilePath).StartsWith("~$", StringComparison.Ordinal));
@@ -208,12 +219,15 @@ public class OfficeBodySearchTests : IDisposable
         TestOfficeFactory.WriteHwpx(_docsRoot, "busad.hwpx", "busad body");
         TestOfficeFactory.WriteXlsx(_docsRoot, "busad.xlsx", "busad body");
         TestOfficeFactory.WriteLegacyXls(_docsRoot, "busad.xls", "busad body");
+        TestOfficeFactory.WritePptx(_docsRoot, "busad.pptx", "busad body");
+        TestOfficeFactory.WritePptx(_docsRoot, "busad.pptm", "busad body");
+        TestOfficeFactory.WriteLegacyPpt(_docsRoot, "busad.ppt", "busad body");
 
         var service = new IndexingService(_userData);
         await service.Start(_docsRoot);
 
-        Assert.Equal(7, service.Search("busad").Count);
-        Assert.Equal(7, service.Search("busad", SearchFormatFilter.All).Count);
+        Assert.Equal(10, service.Search("busad").Count);
+        Assert.Equal(10, service.Search("busad", SearchFormatFilter.All).Count);
 
         var pdf = Assert.Single(service.Search("busad", SearchFormatFilter.Pdf));
         Assert.EndsWith(".pdf", pdf.Document.FilePath, StringComparison.OrdinalIgnoreCase);
@@ -237,6 +251,13 @@ public class OfficeBodySearchTests : IDisposable
             || hit.Document.FilePath.EndsWith(".xls", StringComparison.OrdinalIgnoreCase)));
         Assert.DoesNotContain(excel, hit => hit.Document.FilePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
 
+        var ppt = service.Search("busad", SearchFormatFilter.Ppt);
+        Assert.Equal(3, ppt.Count);
+        Assert.All(ppt, hit => Assert.True(
+            hit.Document.FilePath.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".pptm", StringComparison.OrdinalIgnoreCase)
+            || hit.Document.FilePath.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase)));
+
         var pdfAndExcel = service.Search("busad", SearchFormatFilter.Pdf | SearchFormatFilter.Excel);
         Assert.Equal(3, pdfAndExcel.Count);
         Assert.All(pdfAndExcel, hit => Assert.True(
@@ -245,6 +266,64 @@ public class OfficeBodySearchTests : IDisposable
             || hit.Document.FilePath.EndsWith(".xls", StringComparison.OrdinalIgnoreCase)));
         Assert.DoesNotContain(pdfAndExcel, hit => hit.Document.FilePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(pdfAndExcel, hit => hit.Document.FilePath.EndsWith(".hwp", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(pdfAndExcel, hit => hit.Document.FilePath.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task pptx_body_is_searchable_even_when_filename_does_not_match()
+    {
+        TestOfficeFactory.WritePptx(_docsRoot, "내부회의.pptx", "본 버스 광고 계약 조항은 을의 의무를 정한다.");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_docsRoot);
+
+        var hit = Assert.Single(service.Search("버스 광고"));
+        Assert.Equal(SearchMatchKind.Body, hit.MatchKind);
+        Assert.Contains("버스 광고 계약", hit.Snippet, StringComparison.Ordinal);
+        Assert.Contains("내부회의.pptx", hit.Document.FilePath, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("indexed", hit.Document.Status);
+        Assert.Equal("PPTX", IndexableFiles.Badge(hit.Document.FilePath));
+    }
+
+    [Fact]
+    public void pptx_ignores_slide_layout_placeholder_text()
+    {
+        var path = TestOfficeFactory.WritePptx(_docsRoot, "회의.pptx", "버스 광고 계약", "Click to add title");
+
+        var text = PptxZipTextExtractor.Extract(path);
+
+        Assert.Contains("버스 광고 계약", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Click to add title", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void pptx_notes_are_included_in_body()
+    {
+        var path = TestOfficeFactory.WritePptxWithNotes(_docsRoot, "회의.pptx", "표지", "부대 시설 사용 계약");
+
+        var text = PptxZipTextExtractor.Extract(path);
+
+        Assert.Contains("표지", text, StringComparison.Ordinal);
+        Assert.Contains("부대 시설 사용 계약", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task pptm_and_legacy_ppt_bodies_are_searchable()
+    {
+        TestOfficeFactory.WritePptx(_docsRoot, "견적.pptm", "본 버스 광고 계약 조항은 을의 의무를 정한다.");
+        TestOfficeFactory.WriteLegacyPpt(_docsRoot, "견적.ppt", "부대 시설 사용 계약");
+
+        var service = new IndexingService(_userData);
+        await service.Start(_docsRoot);
+
+        var pptm = Assert.Single(service.Search("버스 광고"));
+        Assert.Equal(SearchMatchKind.Body, pptm.MatchKind);
+        Assert.Equal("PPTM", IndexableFiles.Badge(pptm.Document.FilePath));
+
+        var ppt = Assert.Single(service.Search("부대"));
+        Assert.Equal(SearchMatchKind.Body, ppt.MatchKind);
+        Assert.Contains("부대 시설", ppt.Snippet, StringComparison.Ordinal);
+        Assert.Equal("PPT", IndexableFiles.Badge(ppt.Document.FilePath));
     }
 
     [Fact]
@@ -308,20 +387,25 @@ public class OfficeBodySearchTests : IDisposable
         var docx = TestOfficeFactory.WriteDocx(_docsRoot, "keep.docx", "keep body");
         var hwp = TestOfficeFactory.WriteHwp(_docsRoot, "keep.hwp", "keep hwp");
         var xlsx = TestOfficeFactory.WriteXlsx(_docsRoot, "keep.xlsx", "keep excel");
+        var pptx = TestOfficeFactory.WritePptx(_docsRoot, "keep.pptx", "keep ppt");
         var originalDocx = File.ReadAllBytes(docx);
         var originalHwp = File.ReadAllBytes(hwp);
         var originalXlsx = File.ReadAllBytes(xlsx);
+        var originalPptx = File.ReadAllBytes(pptx);
         var docxMtime = File.GetLastWriteTimeUtc(docx);
         var hwpMtime = File.GetLastWriteTimeUtc(hwp);
         var xlsxMtime = File.GetLastWriteTimeUtc(xlsx);
+        var pptxMtime = File.GetLastWriteTimeUtc(pptx);
 
         await new IndexingService(_userData).Start(_docsRoot);
 
         Assert.Equal(originalDocx, File.ReadAllBytes(docx));
         Assert.Equal(originalHwp, File.ReadAllBytes(hwp));
         Assert.Equal(originalXlsx, File.ReadAllBytes(xlsx));
+        Assert.Equal(originalPptx, File.ReadAllBytes(pptx));
         Assert.Equal(docxMtime, File.GetLastWriteTimeUtc(docx));
         Assert.Equal(hwpMtime, File.GetLastWriteTimeUtc(hwp));
         Assert.Equal(xlsxMtime, File.GetLastWriteTimeUtc(xlsx));
+        Assert.Equal(pptxMtime, File.GetLastWriteTimeUtc(pptx));
     }
 }

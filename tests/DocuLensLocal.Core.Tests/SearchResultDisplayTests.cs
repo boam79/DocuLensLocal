@@ -33,6 +33,9 @@ public class SearchResultDisplayTests
     [InlineData("/docs/a.xlsx", SearchFormatFilter.Excel)]
     [InlineData("/docs/a.xlsm", SearchFormatFilter.Excel)]
     [InlineData("/docs/a.xls", SearchFormatFilter.Excel)]
+    [InlineData("/docs/a.pptx", SearchFormatFilter.Ppt)]
+    [InlineData("/docs/a.pptm", SearchFormatFilter.Ppt)]
+    [InlineData("/docs/a.ppt", SearchFormatFilter.Ppt)]
     public void kind_group_matches_the_format_buttons(string path, SearchFormatFilter expected)
     {
         Assert.Equal(expected, SearchResultDisplay.KindGroup(path));

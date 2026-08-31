@@ -6,6 +6,7 @@ public static class ReleaseHistory
 {
     public static IReadOnlyList<ReleaseNote> Known { get; } =
     [
+        new("0.1.30", "PowerPoint 본문 검색·OCR"),
         new("0.1.29", "업데이트 내역 팝업"),
         new("0.1.28", "정보 탭 상태"),
         new("0.1.27", "검색 화면 정리"),

@@ -11,6 +11,9 @@ public enum IndexableFileKind
     Xlsx,
     Xlsm,
     Xls,
+    Pptx,
+    Pptm,
+    Ppt,
 }
 
 public static class IndexableFiles
@@ -69,6 +72,21 @@ public static class IndexableFiles
             return IndexableFileKind.Xls;
         }
 
+        if (ext.Equals(".pptx", StringComparison.OrdinalIgnoreCase))
+        {
+            return IndexableFileKind.Pptx;
+        }
+
+        if (ext.Equals(".pptm", StringComparison.OrdinalIgnoreCase))
+        {
+            return IndexableFileKind.Pptm;
+        }
+
+        if (ext.Equals(".ppt", StringComparison.OrdinalIgnoreCase))
+        {
+            return IndexableFileKind.Ppt;
+        }
+
         return IndexableFileKind.Unknown;
     }
 
@@ -102,6 +120,11 @@ public static class IndexableFiles
             return true;
         }
 
+        if (SearchFormatFilters.Includes(filter, SearchFormatFilter.Ppt) && kind is IndexableFileKind.Pptx or IndexableFileKind.Pptm or IndexableFileKind.Ppt)
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -115,6 +138,9 @@ public static class IndexableFiles
         IndexableFileKind.Xlsx => "XLSX",
         IndexableFileKind.Xlsm => "XLSM",
         IndexableFileKind.Xls => "XLS",
+        IndexableFileKind.Pptx => "PPTX",
+        IndexableFileKind.Pptm => "PPTM",
+        IndexableFileKind.Ppt => "PPT",
         _ => "파일",
     };
 }

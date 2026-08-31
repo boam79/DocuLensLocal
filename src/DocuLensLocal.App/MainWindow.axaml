@@ -86,7 +86,7 @@
                                    FontSize="14"
                                    Foreground="{StaticResource TitleBrush}"
                                    TextWrapping="Wrap"
-                                   Text="검색할 PDF, Word, 한글(HWP), Excel 파일이 들어 있는 폴더를 선택하세요. 파일 이름만이 아니라 계약서 본문·스캔 OCR 글자까지 이 컴퓨터에서만 찾아 둡니다."/>
+                                   Text="검색할 PDF, Word, 한글(HWP), Excel, PowerPoint 파일이 들어 있는 폴더를 선택하세요. 파일 이름만이 아니라 계약서 본문·스캔 OCR 글자까지 이 컴퓨터에서만 찾아 둡니다."/>
                         <TextBlock Margin="0,12,0,0"
                                    FontSize="13"
                                    Foreground="{StaticResource MutedBrush}"
@@ -219,34 +219,44 @@
                                    IsVisible="False"
                                    Text="0건"/>
                         <StackPanel>
-                            <StackPanel x:Name="IdleFormatBadges"
-                                        Orientation="Horizontal"
-                                        Spacing="8">
+                            <WrapPanel x:Name="IdleFormatBadges"
+                                       Orientation="Horizontal">
                                 <Button x:Name="PdfFormatButton"
                                         Classes="format pdf"
                                         Tag="Pdf"
+                                        Margin="0,0,8,8"
                                         ToolTip.Tip="PDF 포함/제외"
                                         Content="PDF"
                                         Click="FormatFilterButton_OnClick"/>
                                 <Button x:Name="WordFormatButton"
                                         Classes="format word"
                                         Tag="Word"
+                                        Margin="0,0,8,8"
                                         ToolTip.Tip="Word 포함/제외"
                                         Content="WORD"
                                         Click="FormatFilterButton_OnClick"/>
                                 <Button x:Name="HangulFormatButton"
                                         Classes="format hwp"
                                         Tag="Hangul"
+                                        Margin="0,0,8,8"
                                         ToolTip.Tip="한글(HWP) 포함/제외"
                                         Content="HWP"
                                         Click="FormatFilterButton_OnClick"/>
                                 <Button x:Name="ExcelFormatButton"
                                         Classes="format excel"
                                         Tag="Excel"
+                                        Margin="0,0,8,8"
                                         ToolTip.Tip="Excel 포함/제외"
                                         Content="EXCEL"
                                         Click="FormatFilterButton_OnClick"/>
-                            </StackPanel>
+                                <Button x:Name="PptFormatButton"
+                                        Classes="format ppt"
+                                        Tag="Ppt"
+                                        Margin="0,0,8,8"
+                                        ToolTip.Tip="PowerPoint 포함/제외"
+                                        Content="PPT"
+                                        Click="FormatFilterButton_OnClick"/>
+                            </WrapPanel>
                             <TextBlock x:Name="FormatFilterHintText"
                                        Margin="0,8,0,0"
                                        FontSize="12"
@@ -300,6 +310,7 @@
                                                 Classes.word="{Binding IsWord}"
                                                 Classes.hwp="{Binding IsHangul}"
                                                 Classes.excel="{Binding IsExcel}"
+                                                Classes.ppt="{Binding IsPpt}"
                                                 Width="40"
                                                 Height="40"
                                                 CornerRadius="10"

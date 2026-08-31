@@ -50,6 +50,16 @@ public sealed class CompositeDocumentExtractor : IPdfContentExtractor
                 OleEmbeddedImages.Read(path, cancellationToken),
                 _ocr,
                 cancellationToken),
+            IndexableFileKind.Pptx or IndexableFileKind.Pptm => OfficeBodyExtractor.Combine(
+                PptxZipTextExtractor.Extract(path, cancellationToken),
+                ZipOfficeMedia.ReadImages(path, cancellationToken),
+                _ocr,
+                cancellationToken),
+            IndexableFileKind.Ppt => OfficeBodyExtractor.Combine(
+                LegacyPptTextExtractor.Extract(path, cancellationToken),
+                OleEmbeddedImages.Read(path, cancellationToken),
+                _ocr,
+                cancellationToken),
             _ => PdfExtractedContent.Empty,
         };
     }

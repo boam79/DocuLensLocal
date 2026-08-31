@@ -467,6 +467,7 @@ public partial class MainWindow : Window
         SetFormatSelected(WordFormatButton, SearchFormatFilter.Word);
         SetFormatSelected(HangulFormatButton, SearchFormatFilter.Hangul);
         SetFormatSelected(ExcelFormatButton, SearchFormatFilter.Excel);
+        SetFormatSelected(PptFormatButton, SearchFormatFilter.Ppt);
         FormatFilterHintText.Text = SearchFormatFilters.Hint(_formatFilter);
         FormatFilterHintText.IsVisible = _formatFilter != SearchFormatFilter.All;
     }
@@ -814,6 +815,7 @@ public partial class MainWindow : Window
                 IsWord = group == SearchFormatFilter.Word,
                 IsHangul = group == SearchFormatFilter.Hangul,
                 IsExcel = group == SearchFormatFilter.Excel,
+                IsPpt = group == SearchFormatFilter.Ppt,
                 FileNameSpans = EvidenceSnippet.Highlight(fileName, tokens),
                 SnippetSpans = EvidenceSnippet.Highlight(hit.Snippet, tokens),
             };
@@ -1125,6 +1127,7 @@ public partial class MainWindow : Window
         public bool IsWord { get; init; }
         public bool IsHangul { get; init; }
         public bool IsExcel { get; init; }
+        public bool IsPpt { get; init; }
         public IReadOnlyList<SnippetSpan> FileNameSpans { get; init; } = [];
         public IReadOnlyList<SnippetSpan> SnippetSpans { get; init; } = [];
     }

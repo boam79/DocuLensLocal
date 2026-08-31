@@ -38,6 +38,7 @@ public static class SearchResultDisplay
             IndexableFileKind.Docx or IndexableFileKind.Doc => SearchFormatFilter.Word,
             IndexableFileKind.Hwp or IndexableFileKind.Hwpx => SearchFormatFilter.Hangul,
             IndexableFileKind.Xlsx or IndexableFileKind.Xlsm or IndexableFileKind.Xls => SearchFormatFilter.Excel,
+            IndexableFileKind.Pptx or IndexableFileKind.Pptm or IndexableFileKind.Ppt => SearchFormatFilter.Ppt,
             _ => SearchFormatFilter.All,
         };
     }

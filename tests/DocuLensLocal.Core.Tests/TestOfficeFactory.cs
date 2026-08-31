@@ -128,6 +128,90 @@ internal static class TestOfficeFactory
         return path;
     }
 
+    public static string WritePptx(string directory, string fileName, string text, string? layoutPlaceholder = "Click to add title")
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        WriteZipText(zip, "ppt/slides/slide1.xml", SlideXml(text));
+        if (!string.IsNullOrWhiteSpace(layoutPlaceholder))
+        {
+            WriteZipText(zip, "ppt/slideLayouts/slideLayout1.xml", SlideXml(layoutPlaceholder));
+        }
+
+        return path;
+    }
+
+    public static string WritePptxWithImage(string directory, string fileName, string text, byte[] pngBytes)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        WriteZipText(zip, "ppt/slides/slide1.xml", SlideXml(text));
+        var image = zip.CreateEntry("ppt/media/image1.png");
+        using (var stream = image.Open())
+        {
+            stream.Write(pngBytes);
+        }
+
+        return path;
+    }
+
+    public static string WritePptxWithNotes(string directory, string fileName, string slideText, string notesText)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        WriteZipText(zip, "ppt/slides/slide1.xml", SlideXml(slideText));
+        WriteZipText(zip, "ppt/notesSlides/notesSlide1.xml", SlideXml(notesText));
+        return path;
+    }
+
+    public static string WriteLegacyPpt(string directory, string fileName, string text) =>
+        WriteLegacyPpt(directory, fileName, text, pngBytes: null);
+
+    public static string WriteLegacyPptWithImage(string directory, string fileName, string text, byte[] pngBytes) =>
+        WriteLegacyPpt(directory, fileName, text, pngBytes);
+
+    private static string WriteLegacyPpt(string directory, string fileName, string text, byte[]? pngBytes)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, fileName);
+        var payload = Encoding.Unicode.GetBytes(text);
+        var record = new byte[8 + payload.Length];
+        BinaryPrimitives.WriteUInt16LittleEndian(record.AsSpan(0), 0);
+        BinaryPrimitives.WriteUInt16LittleEndian(record.AsSpan(2), 0x0FA0);
+        BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(4), (uint)payload.Length);
+        payload.CopyTo(record.AsSpan(8));
+
+        using (var root = RootStorage.Create(path))
+        {
+            using (var stream = root.CreateStream("PowerPoint Document"))
+            {
+                stream.Write(record);
+            }
+
+            if (pngBytes is { Length: > 0 })
+            {
+                using var pictures = root.CreateStream("Pictures");
+                pictures.Write(pngBytes);
+            }
+        }
+
+        return path;
+    }
+
+    private static string SlideXml(string text)
+    {
+        var escaped = System.Security.SecurityElement.Escape(text);
+        return $"""
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+              <p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t xml:space="preserve">{escaped}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld>
+            </p:sld>
+            """;
+    }
+
     private static void WriteZipText(ZipArchive zip, string entryName, string xml)
     {
         var entry = zip.CreateEntry(entryName);

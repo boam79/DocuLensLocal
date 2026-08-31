@@ -617,6 +617,11 @@ PPT: 지금은 미지원. 5안이면 타이핑 글자는 ZIP XML, 스캔 붙인 
 
 CLIP 정확도: 큰 물체 영어 공개시험 약 60%대. 세부·한국어 직접 비교는 약함. 영어 프롬프트→한국어 저장. 사람 눈/ChatGPT 아님.
 
+## Current Status / Progress Tracking (2026-08-31 고도화 5안)
+
+- 모드: **Executor** (PowerPoint 본문·OCR — 사용자 확인 전 완료 표시 금지)
+- 범위: 고도화 5안만. `.pptx` `.pptm` `.ppt`. 종류 칸 PPT. 이미지 1·2안, 고도화 1~4·6안은 제외.
+
 
 
 

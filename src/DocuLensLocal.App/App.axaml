@@ -20,6 +20,8 @@
         <SolidColorBrush x:Key="HwpBadgeTextBrush" Color="#0F766E"/>
         <SolidColorBrush x:Key="ExcelBadgeBrush" Color="#DCFCE7"/>
         <SolidColorBrush x:Key="ExcelBadgeTextBrush" Color="#166534"/>
+        <SolidColorBrush x:Key="PptBadgeBrush" Color="#FFEDD5"/>
+        <SolidColorBrush x:Key="PptBadgeTextBrush" Color="#C2410C"/>
         <SolidColorBrush x:Key="VersionChipBrush" Color="#F1F5F9"/>
         <SolidColorBrush x:Key="VersionChipTextBrush" Color="#94A3B8"/>
     </Application.Resources>
@@ -123,6 +125,12 @@
         </Style>
         <Style Selector="Border.result-badge.excel TextBlock">
             <Setter Property="Foreground" Value="{StaticResource ExcelBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.ppt">
+            <Setter Property="Background" Value="{StaticResource PptBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.ppt TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PptBadgeTextBrush}"/>
         </Style>
 
         <Style Selector="Button.ghost">
@@ -236,6 +244,10 @@
         <Style Selector="Button.format.excel">
             <Setter Property="Background" Value="{StaticResource ExcelBadgeBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource ExcelBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.ppt">
+            <Setter Property="Background" Value="{StaticResource PptBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource PptBadgeTextBrush}"/>
         </Style>
         <Style Selector="Button.format:pointerover /template/ Border#Bd">
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>

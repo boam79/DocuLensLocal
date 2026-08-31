@@ -5,7 +5,13 @@ namespace DocuLensLocal.Core;
 
 public static class ZipOfficeTextExtractor
 {
-    public static string Extract(string path, CancellationToken cancellationToken = default)
+    public static string Extract(string path, CancellationToken cancellationToken = default) =>
+        Extract(path, includeEntry: null, cancellationToken);
+
+    public static string Extract(
+        string path,
+        Func<string, bool>? includeEntry,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         if (!File.Exists(path))
@@ -21,6 +27,11 @@ public static class ZipOfficeTextExtractor
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!entry.FullName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (includeEntry is not null && !includeEntry(entry.FullName))
                 {
                     continue;
                 }

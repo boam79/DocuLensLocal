@@ -8,13 +8,14 @@ public enum SearchFormatFilter
     Word = 2,
     Hangul = 4,
     Excel = 8,
+    Ppt = 16,
 }
 
 public static class SearchFormatFilters
 {
     public static SearchFormatFilter Toggle(SearchFormatFilter current, SearchFormatFilter clicked)
     {
-        if (clicked is not (SearchFormatFilter.Pdf or SearchFormatFilter.Word or SearchFormatFilter.Hangul or SearchFormatFilter.Excel))
+        if (clicked is not (SearchFormatFilter.Pdf or SearchFormatFilter.Word or SearchFormatFilter.Hangul or SearchFormatFilter.Excel or SearchFormatFilter.Ppt))
         {
             return current;
         }
@@ -46,6 +47,11 @@ public static class SearchFormatFilters
         if (Includes(filter, SearchFormatFilter.Excel))
         {
             labels.Add("Excel");
+        }
+
+        if (Includes(filter, SearchFormatFilter.Ppt))
+        {
+            labels.Add("PPT");
         }
 
         return labels;

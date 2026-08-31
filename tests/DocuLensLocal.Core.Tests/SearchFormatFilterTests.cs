@@ -30,6 +30,7 @@ public class SearchFormatFilterTests
         Assert.Contains("Word만", SearchFormatFilters.Hint(SearchFormatFilter.Word), StringComparison.Ordinal);
         Assert.Contains("한글(HWP)만", SearchFormatFilters.Hint(SearchFormatFilter.Hangul), StringComparison.Ordinal);
         Assert.Contains("Excel만", SearchFormatFilters.Hint(SearchFormatFilter.Excel), StringComparison.Ordinal);
+        Assert.Contains("PPT만", SearchFormatFilters.Hint(SearchFormatFilter.Ppt), StringComparison.Ordinal);
 
         var combined = SearchFormatFilters.Hint(SearchFormatFilter.Pdf | SearchFormatFilter.Hangul);
         Assert.Contains("PDF", combined, StringComparison.Ordinal);
