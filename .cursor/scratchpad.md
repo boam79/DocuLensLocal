@@ -621,6 +621,9 @@ CLIP 정확도: 큰 물체 영어 공개시험 약 60%대. 세부·한국어 직
 
 - 모드: **Executor** (PowerPoint 본문·OCR — 사용자 확인 전 완료 표시 금지)
 - 범위: 고도화 5안만. `.pptx` `.pptm` `.ppt`. 종류 칸 PPT. 이미지 1·2안, 고도화 1~4·6안은 제외.
+- `dotnet test` 206 통과. 버전 0.1.30.
+- **v0.1.30 uploaded.** Setup.exe를 `-Wait`로 실행하지 않음. 사용자 수동 확인 대기(완료 표시 금지).
+  - GitHub: https://github.com/boam79/DocuLensLocal/releases/download/v0.1.30/DocuLensLocal-win-Setup.exe
 
 
 
