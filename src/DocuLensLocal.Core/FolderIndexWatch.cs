@@ -3,7 +3,7 @@ namespace DocuLensLocal.Core;
 public sealed class FolderIndexWatch : IDisposable
 {
     private readonly DebouncedAction _debounced;
-    private FileSystemWatcher? _watcher;
+    private readonly List<FileSystemWatcher> _watchers = [];
     private bool _disposed;
 
     public FolderIndexWatch(TimeSpan debounce, Action onIdle)
@@ -16,33 +16,22 @@ public sealed class FolderIndexWatch : IDisposable
         });
     }
 
-    public string? Folder { get; private set; }
+    public string? Folder => Folders.Count > 0 ? Folders[0] : null;
 
-    public void SetFolder(string? folder)
+    public IReadOnlyList<string> Folders { get; private set; } = [];
+
+    public void SetFolder(string? folder) =>
+        SetFolders(string.IsNullOrWhiteSpace(folder) ? [] : [folder]);
+
+    public void SetFolders(IEnumerable<string?>? folders)
     {
-        StopWatcher();
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        StopWatchers();
+        var existing = IndexFolderList.Existing(folders);
+        Folders = existing;
+        foreach (var folder in existing)
         {
-            return;
+            _watchers.Add(CreateWatcher(folder));
         }
-
-        Folder = folder;
-        _watcher = new FileSystemWatcher(folder)
-        {
-            Filter = IndexWatchPolicy.FileWatcherFilter,
-            IncludeSubdirectories = true,
-            NotifyFilter = NotifyFilters.FileName
-                | NotifyFilters.DirectoryName
-                | NotifyFilters.LastWrite
-                | NotifyFilters.Size
-                | NotifyFilters.CreationTime,
-            InternalBufferSize = 64 * 1024,
-        };
-        _watcher.Created += OnChanged;
-        _watcher.Changed += OnChanged;
-        _watcher.Deleted += OnChanged;
-        _watcher.Renamed += OnRenamed;
-        _watcher.EnableRaisingEvents = true;
     }
 
     public void Ping() => HandlePath(null);
@@ -55,7 +44,7 @@ public sealed class FolderIndexWatch : IDisposable
         }
     }
 
-    public void Stop() => StopWatcher();
+    public void Stop() => StopWatchers();
 
     public void Dispose()
     {
@@ -65,26 +54,45 @@ public sealed class FolderIndexWatch : IDisposable
         }
 
         _disposed = true;
-        StopWatcher();
+        StopWatchers();
         _debounced.Dispose();
     }
 
-    private void StopWatcher()
+    private FileSystemWatcher CreateWatcher(string folder)
     {
-        if (_watcher is null)
+        var watcher = new FileSystemWatcher(folder)
         {
-            Folder = null;
-            return;
+            Filter = IndexWatchPolicy.FileWatcherFilter,
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.FileName
+                | NotifyFilters.DirectoryName
+                | NotifyFilters.LastWrite
+                | NotifyFilters.Size
+                | NotifyFilters.CreationTime,
+            InternalBufferSize = 64 * 1024,
+        };
+        watcher.Created += OnChanged;
+        watcher.Changed += OnChanged;
+        watcher.Deleted += OnChanged;
+        watcher.Renamed += OnRenamed;
+        watcher.EnableRaisingEvents = true;
+        return watcher;
+    }
+
+    private void StopWatchers()
+    {
+        foreach (var watcher in _watchers)
+        {
+            watcher.EnableRaisingEvents = false;
+            watcher.Created -= OnChanged;
+            watcher.Changed -= OnChanged;
+            watcher.Deleted -= OnChanged;
+            watcher.Renamed -= OnRenamed;
+            watcher.Dispose();
         }
 
-        _watcher.EnableRaisingEvents = false;
-        _watcher.Created -= OnChanged;
-        _watcher.Changed -= OnChanged;
-        _watcher.Deleted -= OnChanged;
-        _watcher.Renamed -= OnRenamed;
-        _watcher.Dispose();
-        _watcher = null;
-        Folder = null;
+        _watchers.Clear();
+        Folders = [];
     }
 
     private void OnChanged(object sender, FileSystemEventArgs e) => HandlePath(e.FullPath);

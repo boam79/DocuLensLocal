@@ -19,15 +19,17 @@ public class InfoStatusCopyTests
         Assert.Equal(3, InfoStatusCopy.Tips.Count);
         Assert.Contains("여러 개", InfoStatusCopy.Tips[0], StringComparison.Ordinal);
         Assert.Contains("열기", InfoStatusCopy.Tips[1], StringComparison.Ordinal);
-        Assert.Contains("폴더", InfoStatusCopy.Tips[2], StringComparison.Ordinal);
+        Assert.Contains("여러 개", InfoStatusCopy.Tips[2], StringComparison.Ordinal);
     }
 
     [Fact]
     public void folder_line_falls_back_when_empty()
     {
-        Assert.Equal("아직 폴더를 고르지 않았습니다.", InfoStatusCopy.FolderLine(null));
+        Assert.Equal("아직 폴더를 고르지 않았습니다.", InfoStatusCopy.FolderLine((string?)null));
         Assert.Equal("아직 폴더를 고르지 않았습니다.", InfoStatusCopy.FolderLine("  "));
         Assert.Equal(@"C:\docs", InfoStatusCopy.FolderLine(@"C:\docs"));
+        Assert.Equal($"C:\\a{Environment.NewLine}D:\\b", InfoStatusCopy.FolderLine([@"C:\a", @"D:\b"]));
+        Assert.Equal(@"C:\a 외 1개", InfoStatusCopy.FolderHeader([@"C:\a", @"D:\b"]));
     }
 
     [Fact]

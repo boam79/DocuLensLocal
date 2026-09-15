@@ -48,7 +48,7 @@ public class IndexBackfillPolicyTests
             Path.GetTempPath()));
         Assert.False(IndexBackfillPolicy.ShouldBackfill(
             new IndexCoverage(10, 0, 0, true),
-            null));
+            (string?)null));
         Assert.False(IndexBackfillPolicy.ShouldBackfill(
             new IndexCoverage(10, 0, 0, true),
             Path.Combine(Path.GetTempPath(), "missing-" + Guid.NewGuid().ToString("N"))));

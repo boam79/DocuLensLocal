@@ -12,11 +12,17 @@ public static class InfoStatusCopy
     [
         "종류 칸은 여러 개를 함께 고를 수 있습니다.",
         "검색 결과에서 열기로 파일을 엽니다.",
-        "폴더가 다르면 파일이 안 나옵니다.",
+        "폴더를 여러 개 고를 수 있습니다.",
     ];
 
     public static string FolderLine(string? folder) =>
-        string.IsNullOrWhiteSpace(folder) ? NoFolder : folder.Trim();
+        FolderLine(IndexFolderList.Normalize(folder));
+
+    public static string FolderLine(IReadOnlyList<string> folders) =>
+        IndexFolderList.ListLine(folders);
+
+    public static string FolderHeader(IReadOnlyList<string> folders) =>
+        IndexFolderList.HeaderLine(folders);
 
     public static string DocumentCount(IndexCoverage coverage) =>
         coverage.DocumentCount <= 0 ? "문서 없음" : $"{coverage.DocumentCount}개";

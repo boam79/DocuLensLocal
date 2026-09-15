@@ -202,11 +202,11 @@ public partial class MainWindow : Window
 
     private void RefreshInfoPanel()
     {
-        var folder = LoadSettings().IndexFolder;
-        InfoFolderPathText.Text = InfoStatusCopy.FolderLine(folder);
-        var canOpen = !string.IsNullOrWhiteSpace(folder);
+        var folders = SavedFolders();
+        InfoFolderPathText.Text = InfoStatusCopy.FolderLine(folders);
+        var canOpen = IndexFolderList.AnyExists(folders);
         InfoFolderButton.IsEnabled = canOpen;
-        ToolTip.SetTip(InfoFolderButton, canOpen ? folder : null);
+        ToolTip.SetTip(InfoFolderButton, canOpen ? IndexFolderList.ListLine(folders) : null);
         var coverage = CoverageOf(_indexing.GetIndexedDocuments());
         InfoDocumentCountText.Text = InfoStatusCopy.DocumentCount(coverage);
         InfoBodyCountText.Text = InfoStatusCopy.BodyLabel(coverage);
@@ -298,58 +298,53 @@ public partial class MainWindow : Window
 
     private void ShowSavedFolder()
     {
-        var settings = LoadSettings();
-        SelectedFolderText.Text = string.IsNullOrWhiteSpace(settings.IndexFolder)
+        var folders = SavedFolders();
+        SelectedFolderText.Text = folders.Count == 0
             ? "아직 폴더를 고르지 않았습니다. 폴더를 고르기 전에는 인덱싱을 시작하지 않습니다."
-            : $"선택한 폴더: {settings.IndexFolder}";
+            : folders.Count == 1
+                ? $"선택한 폴더: {folders[0]}"
+                : "선택한 폴더:" + Environment.NewLine + IndexFolderList.ListLine(folders);
     }
 
     private void UpdateIndexButtonState()
     {
-        var folder = LoadSettings().IndexFolder;
-        IndexButton.IsEnabled = !_isIndexing
-            && !string.IsNullOrWhiteSpace(folder)
-            && Directory.Exists(folder);
+        var folders = SavedFolders();
+        var folderReady = !_isIndexing && IndexFolderList.AnyExists(folders);
+        IndexButton.IsEnabled = folderReady;
         SelectFolderButton.IsEnabled = !_isIndexing;
         FolderMenuButton.IsEnabled = !_isIndexing;
-        ChangeFolderMenuItem.IsEnabled = !_isIndexing;
-        var folderReady = !_isIndexing
-            && !string.IsNullOrWhiteSpace(folder)
-            && Directory.Exists(folder);
+        AddFolderMenuItem.IsEnabled = !_isIndexing;
+        RemoveFolderMenuItem.IsEnabled = !_isIndexing && folders.Count > 0;
         SyncIndexMenuItem.IsEnabled = folderReady;
         RebuildIndexMenuItem.IsEnabled = folderReady;
     }
 
     private async void SelectFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = "인덱싱할 폴더를 선택하세요",
-            AllowMultiple = false,
-        }).ConfigureAwait(true);
-
-        var folder = folders.FirstOrDefault();
-        var path = folder?.TryGetLocalPath();
-        if (string.IsNullOrWhiteSpace(path))
+        var picked = await PickFolderPathsAsync("인덱싱할 폴더를 선택하세요").ConfigureAwait(true);
+        if (picked.Count == 0)
         {
             return;
         }
 
         var settings = LoadSettings();
-        settings.IndexFolder = path;
+        var next = IndexFolderList.Add(IndexFolderList.FromSettings(settings), [.. picked]);
+        IndexFolderList.Apply(settings, next);
         SaveSettings(settings);
         _folderWatch.Stop();
         ShowSavedFolder();
         UpdateIndexButtonState();
-        IndexStatusText.Text = "폴더를 선택했습니다. 인덱싱을 누르면 시작합니다.";
+        IndexStatusText.Text = next.Count > 1
+            ? "폴더를 추가했습니다. 인덱싱을 누르면 고른 폴더를 함께 읽습니다."
+            : "폴더를 선택했습니다. 인덱싱을 누르면 시작합니다.";
         IndexCountText.Text = "건수: —";
         IndexCurrentFileText.Text = "현재 파일: —";
     }
 
     private async void IndexButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var folder = LoadSettings().IndexFolder;
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        var folders = SavedFolders();
+        if (!IndexFolderList.AnyExists(folders))
         {
             UpdateIndexButtonState();
             IndexStatusText.Text = "폴더를 먼저 선택하세요.";
@@ -369,7 +364,7 @@ public partial class MainWindow : Window
         try
         {
             await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
-            var indexing = _indexing.Start(folder, progress, IndexingToken());
+            var indexing = _indexing.Start(folders, progress, IndexingToken());
             _indexingTask = indexing;
             var result = await indexing.ConfigureAwait(true);
             ShowResult(result);
@@ -488,21 +483,92 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ChangeFolderButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void AddFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
+        var picked = await PickFolderPathsAsync("추가할 폴더를 선택하세요").ConfigureAwait(true);
+        if (picked.Count == 0)
+        {
+            return;
+        }
+
+        var settings = LoadSettings();
+        var current = IndexFolderList.FromSettings(settings);
+        var next = IndexFolderList.Add(current, [.. picked]);
+        if (next.Count == current.Count && next.SequenceEqual(current, StringComparer.OrdinalIgnoreCase))
+        {
+            await MessageDialog.AlertAsync(
+                this,
+                "폴더 추가",
+                "이미 읽고 있는 폴더입니다. 아래 폴더면 위 폴더에 이미 들어 있습니다.").ConfigureAwait(true);
+            return;
+        }
+
+        IndexFolderList.Apply(settings, next);
+        SaveSettings(settings);
         _folderWatch.Stop();
-        _showMainSearch = false;
-        SearchTab.IsChecked = true;
-        ShowFirstRun();
-        IndexStatusText.Text = "폴더를 바꾼 뒤 인덱싱을 누르면 그 폴더로 목록을 맞춥니다. 폴더만 고르면 인덱싱은 시작하지 않습니다.";
+        await RunIndexingPassAsync(next, IndexPass.NewAndChanged, "추가한 폴더를 읽는 중…").ConfigureAwait(true);
+    }
+
+    private async void RemoveFolderButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var folders = SavedFolders();
+        if (folders.Count == 0)
+        {
+            return;
+        }
+
+        string? remove;
+        if (folders.Count == 1)
+        {
+            var confirm = await MessageDialog.ConfirmAsync(
+                this,
+                "폴더 빼기",
+                "이 폴더를 빼면 검색 목록에서 그 파일이 빠집니다. 원본 파일은 그대로입니다.",
+                "빼기",
+                "취소").ConfigureAwait(true);
+            if (!confirm)
+            {
+                return;
+            }
+
+            remove = folders[0];
+        }
+        else
+        {
+            remove = await FolderChoiceDialog.PickAsync(this, folders).ConfigureAwait(true);
+            if (string.IsNullOrWhiteSpace(remove))
+            {
+                return;
+            }
+        }
+
+        var remaining = IndexFolderList.Remove(folders, remove);
+        var settings = LoadSettings();
+        IndexFolderList.Apply(settings, remaining);
+        _folderWatch.Stop();
+        if (remaining.Count == 0)
+        {
+            _indexing.ClearIndex();
+            IndexingRunState.OnFinished(settings, completed: false);
+            SaveSettings(settings);
+            _showMainSearch = false;
+            SearchTab.IsChecked = true;
+            ShowFirstRun();
+            IndexStatusText.Text = "폴더를 뺐습니다. 폴더를 고른 뒤 인덱싱을 누르면 다시 읽습니다.";
+            UpdateIndexButtonState();
+            return;
+        }
+
+        SaveSettings(settings);
+        await RunIndexingPassAsync(remaining, IndexPass.NewAndChanged, "뺀 폴더를 목록에서 지우는 중…").ConfigureAwait(true);
     }
 
     private void IndexedFolderButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var folder = LoadSettings().IndexFolder;
+        var folder = IndexFolderList.Existing(SavedFolders()).FirstOrDefault();
         if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
         {
-            ShowFileActionError("폴더를 열 수 없습니다", "폴더가 없거나 옮겨졌습니다. 「폴더」에서 폴더를 바꿔 보세요.");
+            ShowFileActionError("폴더를 열 수 없습니다", "폴더가 없거나 옮겨졌습니다. 「폴더」에서 폴더를 추가하거나 빼 보세요.");
             return;
         }
 
@@ -518,8 +584,8 @@ public partial class MainWindow : Window
 
     private async void SyncIndexButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var folder = LoadSettings().IndexFolder;
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        var folders = SavedFolders();
+        if (!IndexFolderList.AnyExists(folders))
         {
             _showMainSearch = false;
             SearchTab.IsChecked = true;
@@ -533,7 +599,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var plan = _indexing.PlanSync(folder);
+        var plan = _indexing.PlanSync(folders);
         if (!plan.NeedsWork)
         {
             _showMainSearch = true;
@@ -543,10 +609,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
+        await RunIndexingPassAsync(folders, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
     }
 
-    private async Task RunIndexingPassAsync(string folder, IndexPass pass, string startMessage, bool preserveSearch = false)
+    private async Task RunIndexingPassAsync(IReadOnlyList<string> folders, IndexPass pass, string startMessage, bool preserveSearch = false)
     {
         if (_isIndexing)
         {
@@ -581,7 +647,7 @@ public partial class MainWindow : Window
         try
         {
             await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
-            var indexing = _indexing.Start(folder, progress, IndexingToken(), pass);
+            var indexing = _indexing.Start(folders, progress, IndexingToken(), pass);
             _indexingTask = indexing;
             var result = await indexing.ConfigureAwait(true);
             var settings = LoadSettings();
@@ -634,8 +700,8 @@ public partial class MainWindow : Window
 
     private async void RebuildIndexButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var folder = LoadSettings().IndexFolder;
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        var folders = SavedFolders();
+        if (!IndexFolderList.AnyExists(folders))
         {
             _showMainSearch = false;
             SearchTab.IsChecked = true;
@@ -652,7 +718,7 @@ public partial class MainWindow : Window
         var confirm = await MessageDialog.ConfirmAsync(
             this,
             "처음부터 다시 읽기",
-            "원본 파일은 그대로입니다. 이 앱의 검색 목록만 지우고 폴더를 처음부터 다시 읽습니다.",
+            "원본 파일은 그대로입니다. 이 앱의 검색 목록만 지우고 고른 폴더를 처음부터 다시 읽습니다.",
             "다시 읽기",
             "취소").ConfigureAwait(true);
         if (!confirm)
@@ -681,7 +747,7 @@ public partial class MainWindow : Window
         try
         {
             await TessdataInstaller.EnsureUserDataAsync().ConfigureAwait(true);
-            var indexing = _indexing.Rebuild(folder, progress, IndexingToken());
+            var indexing = _indexing.Rebuild(folders, progress, IndexingToken());
             _indexingTask = indexing;
             var result = await indexing.ConfigureAwait(true);
             var settings = LoadSettings();
@@ -771,10 +837,10 @@ public partial class MainWindow : Window
 
     private void ShowIndexedFolder()
     {
-        var folder = LoadSettings().IndexFolder ?? string.Empty;
-        IndexedFolderPathText.Text = folder;
-        IndexedFolderButton.IsVisible = !string.IsNullOrWhiteSpace(folder);
-        ToolTip.SetTip(IndexedFolderButton, string.IsNullOrWhiteSpace(folder) ? null : folder);
+        var folders = SavedFolders();
+        IndexedFolderPathText.Text = IndexFolderList.HeaderLine(folders);
+        IndexedFolderButton.IsVisible = folders.Count > 0;
+        ToolTip.SetTip(IndexedFolderButton, folders.Count == 0 ? null : IndexFolderList.ListLine(folders));
     }
 
     private void ApplySearchListMode(SearchListMode mode)
@@ -865,11 +931,11 @@ public partial class MainWindow : Window
         }
 
         var settings = LoadSettings();
+        var folders = IndexFolderList.FromSettings(settings);
         var resume = IndexResumePolicy.ShouldResume(settings);
-        var backfill = IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), settings.IndexFolder);
-        var folder = settings.IndexFolder;
-        var plan = !string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder)
-            ? _indexing.PlanSync(folder)
+        var backfill = IndexBackfillPolicy.ShouldBackfill(_indexing.GetCoverage(), folders);
+        var plan = IndexFolderList.AnyExists(folders)
+            ? _indexing.PlanSync(folders)
             : new IndexSyncPlan(0, 0, 0);
         var sync = !resume && !backfill && IndexSyncPolicy.ShouldAutoSync(settings, plan);
         if (!resume && !backfill && !sync)
@@ -895,13 +961,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (sync && !string.IsNullOrWhiteSpace(folder))
+        if (sync && IndexFolderList.AnyExists(folders))
         {
-            await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
+            await RunIndexingPassAsync(folders, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…").ConfigureAwait(true);
             return;
         }
 
-        folder = settings.IndexFolder!;
         _isIndexing = true;
         UpdateIndexButtonState();
         BeginIndexingCancellation();
@@ -936,7 +1001,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var indexing = _indexing.Start(folder, progress, IndexingToken());
+            var indexing = _indexing.Start(folders, progress, IndexingToken());
             _indexingTask = indexing;
             await indexing.ConfigureAwait(true);
             settings = LoadSettings();
@@ -987,7 +1052,7 @@ public partial class MainWindow : Window
         var settings = LoadSettings();
         if (IndexWatchPolicy.ShouldWatchFolder(settings))
         {
-            _folderWatch.SetFolder(settings.IndexFolder);
+            _folderWatch.SetFolders(IndexFolderList.FromSettings(settings));
             return;
         }
 
@@ -1003,21 +1068,21 @@ public partial class MainWindow : Window
         }
 
         var settings = LoadSettings();
-        if (!IndexWatchPolicy.ShouldWatchFolder(settings) || string.IsNullOrWhiteSpace(settings.IndexFolder))
+        if (!IndexWatchPolicy.ShouldWatchFolder(settings))
         {
             return;
         }
 
-        var folder = settings.IndexFolder;
-        var plan = _indexing.PlanSync(folder);
+        var folders = IndexFolderList.FromSettings(settings);
+        var plan = _indexing.PlanSync(folders);
         if (!plan.NeedsWork)
         {
             _watchRetryCount = 0;
             return;
         }
 
-        await RunIndexingPassAsync(folder, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…", preserveSearch: true).ConfigureAwait(true);
-        if (_indexing.PlanSync(folder).NeedsWork && _watchRetryCount < 3)
+        await RunIndexingPassAsync(folders, IndexPass.NewAndChanged, "새로 넣은 파일만 읽는 중…", preserveSearch: true).ConfigureAwait(true);
+        if (_indexing.PlanSync(folders).NeedsWork && _watchRetryCount < 3)
         {
             _watchRetryCount++;
             _folderWatch.Ping();
@@ -1105,7 +1170,27 @@ public partial class MainWindow : Window
         }
 
         var json = File.ReadAllText(AppPaths.SettingsFile);
-        return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        IndexFolderList.Apply(settings, IndexFolderList.FromSettings(settings));
+        return settings;
+    }
+
+    private static IReadOnlyList<string> SavedFolders() =>
+        IndexFolderList.FromSettings(LoadSettings());
+
+    private async Task<IReadOnlyList<string>> PickFolderPathsAsync(string title)
+    {
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = true,
+        }).ConfigureAwait(true);
+
+        return folders
+            .Select(folder => folder.TryGetLocalPath())
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => path!)
+            .ToArray();
     }
 
     private static void SaveSettings(AppSettings settings)

@@ -22,8 +22,7 @@ public static class IndexWatchPolicy
     {
         ArgumentNullException.ThrowIfNull(settings);
         return settings.IndexCompleted
-            && !string.IsNullOrWhiteSpace(settings.IndexFolder)
-            && Directory.Exists(settings.IndexFolder);
+            && IndexFolderList.AnyExists(IndexFolderList.FromSettings(settings));
     }
 
     public static bool ShouldWatchPath(string? path)

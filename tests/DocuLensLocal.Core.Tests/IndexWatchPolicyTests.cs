@@ -41,6 +41,13 @@ public class IndexWatchPolicyTests
                 IndexFolder = folder,
                 IndexCompleted = false,
             }));
+            var missing = Path.Combine(folder, "gone");
+            Assert.True(IndexWatchPolicy.ShouldWatchFolder(new AppSettings
+            {
+                IndexFolder = missing,
+                IndexFolders = [missing, folder],
+                IndexCompleted = true,
+            }));
         }
         finally
         {

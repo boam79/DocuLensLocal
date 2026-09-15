@@ -51,6 +51,14 @@ public class IndexResumePolicyTests
                 IndexFolder = null,
                 IndexingInProgress = true,
             }));
+            var extra = Path.Combine(folder, "extra");
+            Directory.CreateDirectory(extra);
+            Assert.True(IndexResumePolicy.ShouldResume(new AppSettings
+            {
+                IndexFolder = Path.Combine(folder, "missing"),
+                IndexFolders = [Path.Combine(folder, "missing"), extra],
+                IndexingInProgress = true,
+            }));
         }
         finally
         {

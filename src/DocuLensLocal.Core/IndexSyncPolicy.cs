@@ -9,7 +9,6 @@ public static class IndexSyncPolicy
         return settings.IndexCompleted
             && !settings.IndexingInProgress
             && plan.NeedsWork
-            && !string.IsNullOrWhiteSpace(settings.IndexFolder)
-            && Directory.Exists(settings.IndexFolder);
+            && IndexFolderList.AnyExists(IndexFolderList.FromSettings(settings));
     }
 }

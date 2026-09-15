@@ -483,6 +483,62 @@ public class IndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task indexes_files_from_multiple_folders_without_dropping_the_other()
+    {
+        var left = Path.Combine(_pdfRoot, "left");
+        var right = Path.Combine(_pdfRoot, "right");
+        WriteStubPdf(left, "left.pdf");
+        WriteStubPdf(right, "right.pdf");
+        var service = new IndexingService(_userData, new CountingExtractor("본문"));
+
+        var result = await service.Start(new[] { left, right });
+
+        Assert.Equal(2, result.FoundCount);
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+        Assert.Contains(service.GetIndexedDocuments(), doc => doc.FilePath.Contains("left.pdf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(service.GetIndexedDocuments(), doc => doc.FilePath.Contains("right.pdf", StringComparison.OrdinalIgnoreCase));
+
+        await service.Start(new[] { left, right }, progress: null, CancellationToken.None, IndexPass.NewAndChanged);
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+    }
+
+    [Fact]
+    public async Task removing_a_folder_from_the_list_drops_only_that_folders_files()
+    {
+        var left = Path.Combine(_pdfRoot, "left");
+        var right = Path.Combine(_pdfRoot, "right");
+        WriteStubPdf(left, "keep.pdf");
+        WriteStubPdf(right, "drop.pdf");
+        var service = new IndexingService(_userData, new CountingExtractor("본문"));
+        await service.Start(new[] { left, right });
+
+        await service.Start(new[] { left });
+
+        var remaining = Assert.Single(service.GetIndexedDocuments());
+        Assert.Contains("keep.pdf", remaining.FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task missing_configured_folder_keeps_its_indexed_files()
+    {
+        var kept = Path.Combine(_pdfRoot, "kept");
+        var usb = Path.Combine(_pdfRoot, "usb");
+        WriteStubPdf(kept, "desk.pdf");
+        WriteStubPdf(usb, "stick.pdf");
+        var service = new IndexingService(_userData, new CountingExtractor("본문"));
+        await service.Start(new[] { kept, usb });
+        Directory.Delete(usb, recursive: true);
+
+        var plan = service.PlanSync(new[] { kept, usb });
+        Assert.False(plan.NeedsWork);
+
+        await service.Start(new[] { kept, usb });
+
+        Assert.Equal(2, service.GetIndexedDocuments().Count);
+        Assert.Contains(service.GetIndexedDocuments(), doc => doc.FilePath.Contains("stick.pdf", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void default_constructor_uses_apppaths_userdata()
     {
         var service = new IndexingService();

@@ -30,30 +30,55 @@ public sealed class IndexingService
     public event EventHandler<IndexingProgress>? ProgressChanged;
 
     public Task<IndexingResult> Start(string folderPath, CancellationToken cancellationToken = default) =>
-        Start(folderPath, progress: null, cancellationToken);
+        Start([folderPath], progress: null, cancellationToken);
 
     public Task<IndexingResult> Start(
         string folderPath,
         IProgress<IndexingProgress>? progress,
         CancellationToken cancellationToken = default) =>
-        Start(folderPath, progress, cancellationToken, IndexPass.FillMissingBody);
+        Start([folderPath], progress, cancellationToken, IndexPass.FillMissingBody);
+
+    public Task<IndexingResult> Start(
+        string folderPath,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken,
+        IndexPass pass) =>
+        Start([folderPath], progress, cancellationToken, pass);
+
+    public Task<IndexingResult> Start(
+        IReadOnlyList<string> folderPaths,
+        CancellationToken cancellationToken = default) =>
+        Start(folderPaths, progress: null, cancellationToken);
+
+    public Task<IndexingResult> Start(
+        IReadOnlyList<string> folderPaths,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default) =>
+        Start(folderPaths, progress, cancellationToken, IndexPass.FillMissingBody);
 
     public async Task<IndexingResult> Start(
-        string folderPath,
+        IReadOnlyList<string> folderPaths,
         IProgress<IndexingProgress>? progress,
         CancellationToken cancellationToken,
         IndexPass pass)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
-        if (!Directory.Exists(folderPath))
+        ArgumentNullException.ThrowIfNull(folderPaths);
+        var folders = IndexFolderList.Normalize(folderPaths);
+        if (folders.Count == 0)
         {
-            throw new DirectoryNotFoundException($"Indexing folder not found: {folderPath}");
+            throw new ArgumentException("Indexing folder not specified.", nameof(folderPaths));
+        }
+
+        var existing = IndexFolderList.Existing(folders);
+        if (existing.Count == 0)
+        {
+            throw new DirectoryNotFoundException($"Indexing folder not found: {folders[0]}");
         }
 
         Directory.CreateDirectory(UserDataDirectory);
 
         var files = await Task.Run(
-            () => DiscoverIndexableFiles(folderPath).ToArray(),
+            () => DiscoverIndexableFiles(existing),
             cancellationToken).ConfigureAwait(false);
 
         var errors = new List<IndexingError>();
@@ -63,6 +88,7 @@ public sealed class IndexingService
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
         var previous = store.GetAll().ToDictionary(doc => doc.FilePath, StringComparer.OrdinalIgnoreCase);
+        var keep = FilesToKeep(files, folders, previous.Keys);
 
         foreach (var file in files)
         {
@@ -71,8 +97,8 @@ public sealed class IndexingService
 
             try
             {
-                previous.TryGetValue(file, out var existing);
-                var document = IndexFileReadOnly(file, existing, cancellationToken, pass);
+                previous.TryGetValue(file, out var existingDoc);
+                var document = IndexFileReadOnly(file, existingDoc, cancellationToken, pass);
                 store.Upsert(document);
                 documents.Add(document);
             }
@@ -88,7 +114,7 @@ public sealed class IndexingService
             Report(progress, files.Length, documents.Count, file, phaseKo, errors, completed: false);
         }
 
-        store.KeepOnly(files);
+        store.KeepOnly(keep);
 
         var result = new IndexingResult
         {
@@ -102,15 +128,20 @@ public sealed class IndexingService
         return result;
     }
 
-    public IndexSyncPlan PlanSync(string folderPath)
+    public IndexSyncPlan PlanSync(string folderPath) =>
+        PlanSync([folderPath]);
+
+    public IndexSyncPlan PlanSync(IReadOnlyList<string> folderPaths)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
-        if (!Directory.Exists(folderPath))
+        ArgumentNullException.ThrowIfNull(folderPaths);
+        var folders = IndexFolderList.Normalize(folderPaths);
+        var existing = IndexFolderList.Existing(folders);
+        if (existing.Count == 0)
         {
             return new IndexSyncPlan(0, 0, 0);
         }
 
-        var files = DiscoverIndexableFiles(folderPath).ToArray();
+        var files = DiscoverIndexableFiles(existing);
         if (!File.Exists(IndexDatabasePath))
         {
             return new IndexSyncPlan(files.Length, 0, 0);
@@ -122,26 +153,26 @@ public sealed class IndexingService
         var changedCount = 0;
         foreach (var file in files)
         {
-            if (!previous.TryGetValue(file, out var existing))
+            if (!previous.TryGetValue(file, out var existingDoc))
             {
                 newCount++;
                 continue;
             }
 
-            if (!IndexFreshness.IsUnchanged(existing, new FileInfo(file)))
+            if (!IndexFreshness.IsUnchanged(existingDoc, new FileInfo(file)))
             {
                 changedCount++;
                 continue;
             }
 
-            if (IndexFreshness.NeedsBodyRetry(existing, file))
+            if (IndexFreshness.NeedsBodyRetry(existingDoc, file))
             {
                 changedCount++;
             }
         }
 
-        var fileSet = new HashSet<string>(files, StringComparer.OrdinalIgnoreCase);
-        var removedCount = previous.Keys.Count(path => !fileSet.Contains(path));
+        var keep = FilesToKeep(files, folders, previous.Keys);
+        var removedCount = previous.Keys.Count(path => !keep.Contains(path));
         return new IndexSyncPlan(newCount, changedCount, removedCount);
     }
 
@@ -191,16 +222,27 @@ public sealed class IndexingService
     }
 
     public Task<IndexingResult> Rebuild(string folderPath, CancellationToken cancellationToken = default) =>
-        Rebuild(folderPath, progress: null, cancellationToken);
+        Rebuild([folderPath], progress: null, cancellationToken);
+
+    public Task<IndexingResult> Rebuild(
+        string folderPath,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default) =>
+        Rebuild([folderPath], progress, cancellationToken);
+
+    public Task<IndexingResult> Rebuild(
+        IReadOnlyList<string> folderPaths,
+        CancellationToken cancellationToken = default) =>
+        Rebuild(folderPaths, progress: null, cancellationToken);
 
     public async Task<IndexingResult> Rebuild(
-        string folderPath,
+        IReadOnlyList<string> folderPaths,
         IProgress<IndexingProgress>? progress,
         CancellationToken cancellationToken = default)
     {
         Report(progress, foundCount: 0, processedCount: 0, currentFile: null, "검색 목록을 지우는 중", [], completed: false);
         ClearIndex();
-        return await Start(folderPath, progress, cancellationToken).ConfigureAwait(false);
+        return await Start(folderPaths, progress, cancellationToken).ConfigureAwait(false);
     }
 
     public IndexCoverage GetCoverage()
@@ -213,11 +255,37 @@ public sealed class IndexingService
             CompositeOcrEngine.CreateDefault().IsAvailable);
     }
 
-    private static IEnumerable<string> DiscoverIndexableFiles(string folderPath) =>
-        Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
+    private static string[] DiscoverIndexableFiles(IReadOnlyList<string> folderPaths) =>
+        folderPaths
+            .SelectMany(folderPath => Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories))
             .Where(IndexableFiles.IsIndexable)
             .Select(Path.GetFullPath)
-            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static IReadOnlyList<string> FilesToKeep(
+        IReadOnlyList<string> discovered,
+        IReadOnlyList<string> configured,
+        IEnumerable<string> previousPaths)
+    {
+        var keep = new HashSet<string>(discovered, StringComparer.OrdinalIgnoreCase);
+        foreach (var path in previousPaths)
+        {
+            if (keep.Contains(path))
+            {
+                continue;
+            }
+
+            var home = configured.FirstOrDefault(folder => IndexFolderList.IsInside(path, folder));
+            if (home is not null && !Directory.Exists(home))
+            {
+                keep.Add(path);
+            }
+        }
+
+        return keep.ToArray();
+    }
 
     private IndexedDocument IndexFileReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken, IndexPass pass)
     {

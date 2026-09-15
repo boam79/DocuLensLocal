@@ -15,7 +15,11 @@ public static class AppPaths
 
 public sealed class AppSettings
 {
+    /// <summary>First indexed folder. Kept so older builds can still read settings.json.</summary>
     public string? IndexFolder { get; set; }
+
+    /// <summary>All indexed folders. Empty means use <see cref="IndexFolder"/> only.</summary>
+    public List<string> IndexFolders { get; set; } = [];
 
     /// <summary>True after IndexingService.Start completed, including 0-file folders.</summary>
     public bool IndexCompleted { get; set; }

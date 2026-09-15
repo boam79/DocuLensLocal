@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.30</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.31</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -55,13 +55,16 @@ public class SolutionSmokeTests
         Assert.Contains("Content=\"버스 광고\"", axaml, StringComparison.Ordinal);
         Assert.Contains("파일명이나 본문 단어로 찾아 보세요", axaml, StringComparison.Ordinal);
         Assert.Contains("검색할 PDF, Word, 한글(HWP), Excel, PowerPoint 파일이 들어 있는 폴더를 선택하세요", axaml, StringComparison.Ordinal);
+        Assert.Contains("여러 폴더를 고를 수 있습니다", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"FolderMenuButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"폴더\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"RebuildIndexMenuItem\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Header=\"처음부터 다시 읽기\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"SyncIndexMenuItem\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Header=\"새 파일만 읽기\"", axaml, StringComparison.Ordinal);
-        Assert.Contains("Header=\"폴더 변경\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Header=\"폴더 추가\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Header=\"폴더 빼기\"", axaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Header=\"폴더 변경\"", axaml, StringComparison.Ordinal);
         Assert.DoesNotContain("x:Name=\"RebuildIndexButton\"", axaml, StringComparison.Ordinal);
         Assert.DoesNotContain("x:Name=\"IndexedFolderText\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"열기\"", axaml, StringComparison.Ordinal);
@@ -96,7 +99,12 @@ public class SolutionSmokeTests
         var window = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.App", "MainWindow.axaml.cs"));
         var settings = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "AppSettings.cs"));
 
+        Assert.Contains("IndexFolders", settings, StringComparison.Ordinal);
         Assert.Contains("IndexingInProgress", settings, StringComparison.Ordinal);
+        Assert.Contains("IndexFolderList", window, StringComparison.Ordinal);
+        Assert.Contains("AddFolderButton_OnClick", window, StringComparison.Ordinal);
+        Assert.Contains("RemoveFolderButton_OnClick", window, StringComparison.Ordinal);
+        Assert.Contains("SetFolders", window, StringComparison.Ordinal);
         Assert.Contains("LastRunVersion", settings, StringComparison.Ordinal);
         Assert.Contains("IndexResumePolicy.ShouldResume", window, StringComparison.Ordinal);
         Assert.Contains("CancelIndexingForUpdate", window, StringComparison.Ordinal);
@@ -135,6 +143,7 @@ public class SolutionSmokeTests
         var access = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "OfficeFileAccess.cs"));
         var watch = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "DocuLensLocal.Core", "FolderIndexWatch.cs"));
         Assert.Contains("FileShare.ReadWrite | FileShare.Delete", access, StringComparison.Ordinal);
+        Assert.Contains("SetFolders", watch, StringComparison.Ordinal);
         Assert.Contains("Filter = IndexWatchPolicy.FileWatcherFilter", watch, StringComparison.Ordinal);
     }
 

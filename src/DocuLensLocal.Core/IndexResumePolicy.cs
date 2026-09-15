@@ -6,8 +6,7 @@ public static class IndexResumePolicy
     {
         ArgumentNullException.ThrowIfNull(settings);
         return settings.IndexingInProgress
-            && !string.IsNullOrWhiteSpace(settings.IndexFolder)
-            && Directory.Exists(settings.IndexFolder);
+            && IndexFolderList.AnyExists(IndexFolderList.FromSettings(settings));
     }
 }
 
