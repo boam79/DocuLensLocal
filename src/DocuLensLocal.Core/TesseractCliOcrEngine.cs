@@ -7,8 +7,10 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
     private readonly string? _executable;
     private readonly string _languages;
 
+    private static readonly Lazy<string?> LocatedExecutable = new(LocateExecutable);
+
     public TesseractCliOcrEngine()
-        : this(FindExecutable(), ResolveLanguages(FindExecutable()))
+        : this(LocatedExecutable.Value, ResolveLanguages(LocatedExecutable.Value))
     {
     }
 
@@ -20,7 +22,7 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
 
     public bool IsAvailable => !string.IsNullOrWhiteSpace(_executable);
 
-    public static bool IsOnPath => !string.IsNullOrWhiteSpace(FindExecutable());
+    public static bool IsOnPath => !string.IsNullOrWhiteSpace(LocatedExecutable.Value);
 
     public string RecognizePng(byte[] pngBytes, CancellationToken cancellationToken = default)
     {
@@ -35,15 +37,22 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var tessdata = TessdataLocator.FindDirectory();
+            var languages = OcrLanguage.Primary(tessdata);
             var start = new ProcessStartInfo
             {
                 FileName = _executable,
-                ArgumentList = { pngPath, "stdout", "-l", _languages, "--psm", "6" },
+                ArgumentList = { pngPath, "stdout", "-l", languages, "--psm", "6" },
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
+            if (!string.IsNullOrWhiteSpace(tessdata))
+            {
+                start.ArgumentList.Add("--tessdata-dir");
+                start.ArgumentList.Add(tessdata);
+            }
             using var process = Process.Start(start);
             if (process is null)
             {
@@ -60,7 +69,9 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
         }
     }
 
-    internal static string? FindExecutable()
+    internal static string? FindExecutable() => LocatedExecutable.Value;
+
+    private static string? LocateExecutable()
     {
         var fromEnv = Environment.GetEnvironmentVariable("TESSDATA_PREFIX");
         _ = fromEnv;
@@ -76,6 +87,12 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
             }
         }
 
+        var nextToApp = FindBundled(AppContext.BaseDirectory);
+        if (nextToApp is not null)
+        {
+            return nextToApp;
+        }
+
         if (OperatingSystem.IsWindows())
         {
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -89,11 +106,34 @@ public sealed class TesseractCliOcrEngine : IOcrEngine
         return null;
     }
 
+    internal static string? FindBundled(string baseDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(baseDirectory) || !Directory.Exists(baseDirectory))
+        {
+            return null;
+        }
+
+        string[] candidates =
+        [
+            Path.Combine(baseDirectory, "tesseract.exe"),
+            Path.Combine(baseDirectory, "tesseract"),
+            Path.Combine(baseDirectory, "tesseract", "tesseract.exe"),
+            Path.Combine(baseDirectory, "tesseract", "tesseract"),
+        ];
+        return candidates.FirstOrDefault(File.Exists);
+    }
+
     internal static string ResolveLanguages(string? executable)
     {
+        var packed = OcrLanguage.Primary(TessdataLocator.FindDirectory());
+        if (packed == "kor")
+        {
+            return packed;
+        }
+
         if (string.IsNullOrWhiteSpace(executable))
         {
-            return "eng";
+            return packed;
         }
 
         try

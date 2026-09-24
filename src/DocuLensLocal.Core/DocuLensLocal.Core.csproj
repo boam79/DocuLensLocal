@@ -8,9 +8,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HwpLibSharp" Version="1.1.10.8" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <PackageReference Include="OpenMcdf" Version="3.1.4" />
     <PackageReference Include="PdfPig" Version="0.1.15" />
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
+    <PackageReference Include="Tesseract" Version="5.2.0" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(PkgTesseract)\x64\*.dll" Condition="Exists('$(PkgTesseract)\x64')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>x64\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="$(PkgTesseract)\x86\*.dll" Condition="Exists('$(PkgTesseract)\x86')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>x86\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -10,7 +10,7 @@ public sealed class IndexingService
     }
 
     public IndexingService(string userDataDirectory)
-        : this(userDataDirectory, new PdfPigContentExtractor())
+        : this(userDataDirectory, new CompositeDocumentExtractor())
     {
     }
 
@@ -30,57 +30,95 @@ public sealed class IndexingService
     public event EventHandler<IndexingProgress>? ProgressChanged;
 
     public Task<IndexingResult> Start(string folderPath, CancellationToken cancellationToken = default) =>
-        Start(folderPath, progress: null, cancellationToken);
+        Start([folderPath], progress: null, cancellationToken);
 
-    public async Task<IndexingResult> Start(
+    public Task<IndexingResult> Start(
         string folderPath,
         IProgress<IndexingProgress>? progress,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        Start([folderPath], progress, cancellationToken, IndexPass.FillMissingBody);
+
+    public Task<IndexingResult> Start(
+        string folderPath,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken,
+        IndexPass pass) =>
+        Start([folderPath], progress, cancellationToken, pass);
+
+    public Task<IndexingResult> Start(
+        IReadOnlyList<string> folderPaths,
+        CancellationToken cancellationToken = default) =>
+        Start(folderPaths, progress: null, cancellationToken);
+
+    public Task<IndexingResult> Start(
+        IReadOnlyList<string> folderPaths,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default) =>
+        Start(folderPaths, progress, cancellationToken, IndexPass.FillMissingBody);
+
+    public async Task<IndexingResult> Start(
+        IReadOnlyList<string> folderPaths,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken,
+        IndexPass pass)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
-        if (!Directory.Exists(folderPath))
+        ArgumentNullException.ThrowIfNull(folderPaths);
+        var folders = IndexFolderList.Normalize(folderPaths);
+        if (folders.Count == 0)
         {
-            throw new DirectoryNotFoundException($"Indexing folder not found: {folderPath}");
+            throw new ArgumentException("Indexing folder not specified.", nameof(folderPaths));
+        }
+
+        var existing = IndexFolderList.Existing(folders);
+        if (existing.Count == 0)
+        {
+            throw new DirectoryNotFoundException($"Indexing folder not found: {folders[0]}");
         }
 
         Directory.CreateDirectory(UserDataDirectory);
 
-        var pdfs = await Task.Run(
-            () => DiscoverPdfs(folderPath).ToArray(),
+        var files = await Task.Run(
+            () => DiscoverIndexableFiles(existing),
             cancellationToken).ConfigureAwait(false);
 
         var errors = new List<IndexingError>();
         var documents = new List<IndexedDocument>();
-        Report(progress, pdfs.Length, processedCount: 0, currentFile: null, "PDF를 찾는 중", errors, completed: false);
+        var phaseKo = pass == IndexPass.NewAndChanged ? "새 파일만 읽는 중" : "본문 추출·OCR";
+        Report(progress, files.Length, processedCount: 0, currentFile: null, "문서를 찾는 중", errors, completed: false);
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
+        var previous = store.GetAll().ToDictionary(doc => doc.FilePath, StringComparer.OrdinalIgnoreCase);
+        var keep = FilesToKeep(files, folders, previous.Keys);
 
-        foreach (var pdf in pdfs)
+        foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Report(progress, pdfs.Length, documents.Count, pdf, "본문 추출·OCR", errors, completed: false);
+            Report(progress, files.Length, documents.Count, file, phaseKo, errors, completed: false);
 
             try
             {
-                var document = IndexPdfReadOnly(pdf, cancellationToken);
+                previous.TryGetValue(file, out var existingDoc);
+                var document = IndexFileReadOnly(file, existingDoc, cancellationToken, pass);
                 store.Upsert(document);
                 documents.Add(document);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidDataException)
             {
                 errors.Add(new IndexingError
                 {
-                    FilePath = pdf,
+                    FilePath = file,
                     Message = ex.Message,
                 });
             }
 
-            Report(progress, pdfs.Length, documents.Count, pdf, "본문 추출·OCR", errors, completed: false);
+            Report(progress, files.Length, documents.Count, file, phaseKo, errors, completed: false);
         }
+
+        store.KeepOnly(keep);
 
         var result = new IndexingResult
         {
-            FoundCount = pdfs.Length,
+            FoundCount = files.Length,
             ProcessedCount = documents.Count,
             Errors = errors.ToArray(),
             Documents = documents.ToArray(),
@@ -88,6 +126,54 @@ public sealed class IndexingService
         };
         Report(progress, result.FoundCount, result.ProcessedCount, currentFile: null, "완료", errors, completed: true);
         return result;
+    }
+
+    public IndexSyncPlan PlanSync(string folderPath) =>
+        PlanSync([folderPath]);
+
+    public IndexSyncPlan PlanSync(IReadOnlyList<string> folderPaths)
+    {
+        ArgumentNullException.ThrowIfNull(folderPaths);
+        var folders = IndexFolderList.Normalize(folderPaths);
+        var existing = IndexFolderList.Existing(folders);
+        if (existing.Count == 0)
+        {
+            return new IndexSyncPlan(0, 0, 0);
+        }
+
+        var files = DiscoverIndexableFiles(existing);
+        if (!File.Exists(IndexDatabasePath))
+        {
+            return new IndexSyncPlan(files.Length, 0, 0);
+        }
+
+        using var store = new DocumentIndexStore(IndexDatabasePath);
+        var previous = store.GetAll().ToDictionary(doc => doc.FilePath, StringComparer.OrdinalIgnoreCase);
+        var newCount = 0;
+        var changedCount = 0;
+        foreach (var file in files)
+        {
+            if (!previous.TryGetValue(file, out var existingDoc))
+            {
+                newCount++;
+                continue;
+            }
+
+            if (!IndexFreshness.IsUnchanged(existingDoc, new FileInfo(file)))
+            {
+                changedCount++;
+                continue;
+            }
+
+            if (IndexFreshness.NeedsBodyRetry(existingDoc, file))
+            {
+                changedCount++;
+            }
+        }
+
+        var keep = FilesToKeep(files, folders, previous.Keys);
+        var removedCount = previous.Keys.Count(path => !keep.Contains(path));
+        return new IndexSyncPlan(newCount, changedCount, removedCount);
     }
 
     public IReadOnlyList<IndexedDocument> GetIndexedDocuments()
@@ -104,7 +190,10 @@ public sealed class IndexingService
     public IReadOnlyList<IndexedDocument> SearchByFileName(string query) =>
         Search(query).Select(hit => hit.Document).ToList();
 
-    public IReadOnlyList<SearchHit> Search(string query)
+    public IReadOnlyList<SearchHit> Search(string query) =>
+        Search(query, SearchFormatFilter.All);
+
+    public IReadOnlyList<SearchHit> Search(string query, SearchFormatFilter format)
     {
         if (string.IsNullOrWhiteSpace(query) || !File.Exists(IndexDatabasePath))
         {
@@ -112,7 +201,48 @@ public sealed class IndexingService
         }
 
         using var store = new DocumentIndexStore(IndexDatabasePath);
-        return store.Search(query);
+        var hits = store.Search(query);
+        if (format == SearchFormatFilter.All)
+        {
+            return hits;
+        }
+
+        return hits.Where(hit => IndexableFiles.Matches(hit.Document.FilePath, format)).ToList();
+    }
+
+    public int ClearIndex()
+    {
+        if (!File.Exists(IndexDatabasePath))
+        {
+            return 0;
+        }
+
+        using var store = new DocumentIndexStore(IndexDatabasePath);
+        return store.DeleteAll();
+    }
+
+    public Task<IndexingResult> Rebuild(string folderPath, CancellationToken cancellationToken = default) =>
+        Rebuild([folderPath], progress: null, cancellationToken);
+
+    public Task<IndexingResult> Rebuild(
+        string folderPath,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default) =>
+        Rebuild([folderPath], progress, cancellationToken);
+
+    public Task<IndexingResult> Rebuild(
+        IReadOnlyList<string> folderPaths,
+        CancellationToken cancellationToken = default) =>
+        Rebuild(folderPaths, progress: null, cancellationToken);
+
+    public async Task<IndexingResult> Rebuild(
+        IReadOnlyList<string> folderPaths,
+        IProgress<IndexingProgress>? progress,
+        CancellationToken cancellationToken = default)
+    {
+        Report(progress, foundCount: 0, processedCount: 0, currentFile: null, "검색 목록을 지우는 중", [], completed: false);
+        ClearIndex();
+        return await Start(folderPaths, progress, cancellationToken).ConfigureAwait(false);
     }
 
     public IndexCoverage GetCoverage()
@@ -122,29 +252,63 @@ public sealed class IndexingService
             documents.Count,
             documents.Count(doc => !string.IsNullOrWhiteSpace(doc.BodyText)),
             documents.Sum(doc => doc.OcrPageCount),
-            TesseractCliOcrEngine.IsOnPath);
+            CompositeOcrEngine.CreateDefault().IsAvailable);
     }
 
-    private static IEnumerable<string> DiscoverPdfs(string folderPath) =>
-        Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
-            .Where(path => path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+    private static string[] DiscoverIndexableFiles(IReadOnlyList<string> folderPaths) =>
+        folderPaths
+            .SelectMany(folderPath => Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories))
+            .Where(IndexableFiles.IsIndexable)
             .Select(Path.GetFullPath)
-            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
-    private IndexedDocument IndexPdfReadOnly(string path, CancellationToken cancellationToken)
+    private static IReadOnlyList<string> FilesToKeep(
+        IReadOnlyList<string> discovered,
+        IReadOnlyList<string> configured,
+        IEnumerable<string> previousPaths)
+    {
+        var keep = new HashSet<string>(discovered, StringComparer.OrdinalIgnoreCase);
+        foreach (var path in previousPaths)
+        {
+            if (keep.Contains(path))
+            {
+                continue;
+            }
+
+            var home = configured.FirstOrDefault(folder => IndexFolderList.IsInside(path, folder));
+            if (home is not null && !Directory.Exists(home))
+            {
+                keep.Add(path);
+            }
+        }
+
+        return keep.ToArray();
+    }
+
+    private IndexedDocument IndexFileReadOnly(string path, IndexedDocument? existing, CancellationToken cancellationToken, IndexPass pass)
     {
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException("PDF was removed before it could be indexed.", path);
+            throw new FileNotFoundException("Document was removed before it could be indexed.", path);
         }
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (OfficeFileAccess.OpenRead(path))
         {
             // Read-only probe so the original file is never opened for write.
         }
 
         var info = new FileInfo(path);
-        var extracted = _extractor.Extract(path, cancellationToken);
+        var skipExtract = pass == IndexPass.NewAndChanged
+            ? IndexFreshness.ShouldSkipOnIncremental(existing, info, IndexableFiles.KindOf(path))
+            : IndexFreshness.CanReuse(existing, info);
+        if (skipExtract)
+        {
+            return existing!;
+        }
+
+        var extracted = ExtractWithRetry(path, cancellationToken);
         var hasBody = !string.IsNullOrWhiteSpace(extracted.BodyText);
         var status = extracted.OcrPageCount > 0
             ? "ocr"
@@ -163,6 +327,31 @@ public sealed class IndexingService
             OcrPageCount = extracted.OcrPageCount,
             Status = status,
         };
+    }
+
+    private PdfExtractedContent ExtractWithRetry(string path, CancellationToken cancellationToken)
+    {
+        Exception? last = null;
+        for (var attempt = 0; attempt < 6; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return _extractor.Extract(path, cancellationToken);
+            }
+            catch (Exception ex) when (OfficeFileAccess.IsTransient(ex))
+            {
+                last = ex;
+                if (attempt == 5)
+                {
+                    break;
+                }
+
+                Thread.Sleep(200);
+            }
+        }
+
+        throw last ?? new IOException($"Could not read {path}");
     }
 
     private void Report(

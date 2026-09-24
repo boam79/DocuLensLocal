@@ -15,8 +15,22 @@ public static class AppPaths
 
 public sealed class AppSettings
 {
+    /// <summary>First indexed folder. Kept so older builds can still read settings.json.</summary>
     public string? IndexFolder { get; set; }
+
+    /// <summary>All indexed folders. Empty means use <see cref="IndexFolder"/> only.</summary>
+    public List<string> IndexFolders { get; set; } = [];
 
     /// <summary>True after IndexingService.Start completed, including 0-file folders.</summary>
     public bool IndexCompleted { get; set; }
+
+    public string? PendingUpdateVersion { get; set; }
+
+    public string? PendingUpdateNotes { get; set; }
+
+    /// <summary>Last app version that finished starting, used to show update notes after Setup.exe upgrades.</summary>
+    public string? LastRunVersion { get; set; }
+
+    /// <summary>True while Start/Rebuild is running, so an update restart can continue leftover files.</summary>
+    public bool IndexingInProgress { get; set; }
 }

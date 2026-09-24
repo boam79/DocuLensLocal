@@ -44,3 +44,16 @@ public sealed record IndexCoverage(
     int BodyCount,
     int OcrPageCount,
     bool OcrEngineAvailable);
+
+public enum IndexPass
+{
+    FillMissingBody,
+    NewAndChanged,
+}
+
+public sealed record IndexSyncPlan(int NewCount, int ChangedCount, int RemovedCount)
+{
+    public int WorkCount => NewCount + ChangedCount + RemovedCount;
+
+    public bool NeedsWork => WorkCount > 0;
+}

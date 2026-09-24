@@ -12,6 +12,16 @@
         <SolidColorBrush x:Key="LineBrush" Color="#E2E8F0"/>
         <SolidColorBrush x:Key="ChipBrush" Color="#CCFBF1"/>
         <SolidColorBrush x:Key="ChipTextBrush" Color="#0F766E"/>
+        <SolidColorBrush x:Key="PdfBadgeBrush" Color="#FEE2E2"/>
+        <SolidColorBrush x:Key="PdfBadgeTextBrush" Color="#B91C1C"/>
+        <SolidColorBrush x:Key="WordBadgeBrush" Color="#DBEAFE"/>
+        <SolidColorBrush x:Key="WordBadgeTextBrush" Color="#1D4ED8"/>
+        <SolidColorBrush x:Key="HwpBadgeBrush" Color="#CCFBF1"/>
+        <SolidColorBrush x:Key="HwpBadgeTextBrush" Color="#0F766E"/>
+        <SolidColorBrush x:Key="ExcelBadgeBrush" Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="ExcelBadgeTextBrush" Color="#166534"/>
+        <SolidColorBrush x:Key="PptBadgeBrush" Color="#FFEDD5"/>
+        <SolidColorBrush x:Key="PptBadgeTextBrush" Color="#C2410C"/>
         <SolidColorBrush x:Key="VersionChipBrush" Color="#F1F5F9"/>
         <SolidColorBrush x:Key="VersionChipTextBrush" Color="#94A3B8"/>
     </Application.Resources>
@@ -80,6 +90,172 @@
             <Setter Property="Opacity" Value="0.45"/>
         </Style>
 
+        <Style Selector="Button.compact">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+
+        <Style Selector="Border.result-badge">
+            <Setter Property="Background" Value="{StaticResource ChipBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentDarkBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.pdf">
+            <Setter Property="Background" Value="{StaticResource PdfBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.pdf TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PdfBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.word">
+            <Setter Property="Background" Value="{StaticResource WordBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.word TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource WordBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.hwp">
+            <Setter Property="Background" Value="{StaticResource HwpBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.hwp TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource HwpBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.excel">
+            <Setter Property="Background" Value="{StaticResource ExcelBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.excel TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ExcelBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.ppt">
+            <Setter Property="Background" Value="{StaticResource PptBadgeBrush}"/>
+        </Style>
+        <Style Selector="Border.result-badge.ppt TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PptBadgeTextBrush}"/>
+        </Style>
+
+        <Style Selector="Button.ghost">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="10"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.folder-link">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <ControlTemplate TargetType="Button">
+                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Left"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.folder-link:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource AccentDarkBrush}"/>
+        </Style>
+
+        <Style Selector="Button.example">
+            <Setter Property="Background" Value="{StaticResource ChipBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ChipTextBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="16"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.example:pointerover /template/ Border#Bd">
+            <Setter Property="Background" Value="#99F6E4"/>
+        </Style>
+
+        <Style Selector="Button.format">
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent"
+                            BorderThickness="1.5"
+                            CornerRadius="16"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.format.pdf">
+            <Setter Property="Background" Value="{StaticResource PdfBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource PdfBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.word">
+            <Setter Property="Background" Value="{StaticResource WordBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource WordBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.hwp">
+            <Setter Property="Background" Value="{StaticResource HwpBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource HwpBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.excel">
+            <Setter Property="Background" Value="{StaticResource ExcelBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ExcelBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format.ppt">
+            <Setter Property="Background" Value="{StaticResource PptBadgeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource PptBadgeTextBrush}"/>
+        </Style>
+        <Style Selector="Button.format:pointerover /template/ Border#Bd">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        </Style>
+        <Style Selector="Button.format.selected /template/ Border#Bd">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentDarkBrush}"/>
+        </Style>
+
         <Style Selector="Button.fullwidth">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="Padding" Value="18,14"/>
@@ -131,16 +307,16 @@
             <Setter Property="BoxShadow" Value="0 3 22 0 #1A0F172A"/>
         </Style>
 
-        <Style Selector="ListBox.search">
+        <Style Selector="ListBox.search-names">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         </Style>
 
-        <Style Selector="ListBox.search ListBoxItem">
+        <Style Selector="ListBox.search-names ListBoxItem">
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <ControlTemplate TargetType="ListBoxItem">
@@ -148,8 +324,8 @@
                             Background="White"
                             BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="14,12">
+                            CornerRadius="10"
+                            Padding="10,8">
                         <ContentPresenter Name="PART_ContentPresenter"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -158,11 +334,11 @@
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="ListBox.search ListBoxItem:pointerover /template/ Border#ItemBd">
+        <Style Selector="ListBox.search-names ListBoxItem:pointerover /template/ Border#ItemBd">
             <Setter Property="Background" Value="#F0FDFA"/>
             <Setter Property="BorderBrush" Value="#99F6E4"/>
         </Style>
-        <Style Selector="ListBox.search ListBoxItem:selected /template/ Border#ItemBd">
+        <Style Selector="ListBox.search-names ListBoxItem:selected /template/ Border#ItemBd">
             <Setter Property="Background" Value="#CCFBF1"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
         </Style>

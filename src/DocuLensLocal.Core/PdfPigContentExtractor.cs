@@ -11,7 +11,7 @@ public sealed class PdfPigContentExtractor : IPdfContentExtractor
     private readonly IPdfPageRasterizer _rasterizer;
 
     public PdfPigContentExtractor()
-        : this(new TesseractCliOcrEngine(), new PdfToImageRasterizer())
+        : this(CompositeOcrEngine.CreateDefault(), new PdfToImageRasterizer())
     {
     }
 
@@ -33,32 +33,30 @@ public sealed class PdfPigContentExtractor : IPdfContentExtractor
         {
             using var document = PdfDocument.Open(pdfPath, new ParsingOptions { UseLenientParsing = true });
             var pages = new List<PdfPageContent>();
-            var ocrPages = 0;
+            var ocrPageNumbers = new List<int>();
             foreach (var page in document.GetPages())
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var digital = ReadDigitalText(page);
-                var ocrText = string.Empty;
-                var letterCount = page.Letters.Count;
-                // Scan PDFs often hide images in XObjects, so OCR any sparse page when an engine exists.
-                if (letterCount < SparseTextLetterThreshold && _ocr.IsAvailable)
+                var needsOcr = page.Letters.Count < SparseTextLetterThreshold && _ocr.IsAvailable;
+                pages.Add(new PdfPageContent(page.Number, digital, ""));
+                if (needsOcr)
                 {
-                    try
-                    {
-                        var png = _rasterizer.RenderPng(pdfPath, page.Number, cancellationToken);
-                        ocrText = _ocr.RecognizePng(png, cancellationToken);
-                        if (!string.IsNullOrWhiteSpace(ocrText))
-                        {
-                            ocrPages++;
-                        }
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        ocrText = string.Empty;
-                    }
+                    ocrPageNumbers.Add(page.Number);
+                }
+            }
+
+            var ocrByPage = RecognizeSparsePages(pdfPath, ocrPageNumbers, cancellationToken);
+            var ocrPages = 0;
+            for (var i = 0; i < pages.Count; i++)
+            {
+                if (!ocrByPage.TryGetValue(pages[i].PageNumber, out var ocrText) || string.IsNullOrWhiteSpace(ocrText))
+                {
+                    continue;
                 }
 
-                pages.Add(new PdfPageContent(page.Number, digital, ocrText));
+                pages[i] = pages[i] with { OcrText = ocrText };
+                ocrPages++;
             }
 
             var body = string.Join("\n", pages.Select(p => p.CombinedText).Where(s => !string.IsNullOrWhiteSpace(s)));
@@ -68,6 +66,62 @@ public sealed class PdfPigContentExtractor : IPdfContentExtractor
         {
             return PdfExtractedContent.Empty;
         }
+    }
+
+    private Dictionary<int, string> RecognizeSparsePages(
+        string pdfPath,
+        List<int> pageNumbers,
+        CancellationToken cancellationToken)
+    {
+        var results = new Dictionary<int, string>();
+        if (pageNumbers.Count == 0)
+        {
+            return results;
+        }
+
+        using var session = _rasterizer.Open(pdfPath);
+        var images = new Dictionary<int, byte[]>();
+        foreach (var pageNumber in pageNumbers)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                images[pageNumber] = session.RenderPng(pageNumber, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+            }
+        }
+
+        if (images.Count == 0)
+        {
+            return results;
+        }
+
+        var bag = new System.Collections.Concurrent.ConcurrentDictionary<int, string>();
+        var options = new ParallelOptions
+        {
+            CancellationToken = cancellationToken,
+            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 1, 4),
+        };
+        Parallel.ForEach(images, options, pair =>
+        {
+            try
+            {
+                bag[pair.Key] = _ocr.RecognizePng(pair.Value, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                bag[pair.Key] = string.Empty;
+            }
+        });
+
+        foreach (var pair in bag)
+        {
+            results[pair.Key] = pair.Value;
+        }
+
+        return results;
     }
 
     private static string ReadDigitalText(UglyToad.PdfPig.Content.Page page)
