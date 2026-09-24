@@ -175,6 +175,7 @@
                                     Classes="ghost"
                                     Content="초기화"
                                     Margin="0,6,8,6"
+                                    ToolTip.Tip="검색어와 고른 종류를 지웁니다"
                                     Click="ResetSearchButton_OnClick"/>
                             <Button x:Name="SearchButton"
                                     DockPanel.Dock="Right"

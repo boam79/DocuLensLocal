@@ -23,6 +23,8 @@ public static class SearchFormatFilters
         return current ^ clicked;
     }
 
+    public static SearchFormatFilter Clear() => SearchFormatFilter.All;
+
     public static bool Includes(SearchFormatFilter current, SearchFormatFilter format) =>
         format != SearchFormatFilter.All && current.HasFlag(format);
 

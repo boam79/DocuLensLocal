@@ -27,7 +27,7 @@ Windows 10/11용 **로컬 문서 검색기**입니다. 탐색기 파일명 검�
 
 설치 파일 직접 주소:
 
-- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.32/DocuLensLocal-win-Setup.exe
+- https://github.com/boam79/DocuLensLocal/releases/download/v0.1.33/DocuLensLocal-win-Setup.exe
 
 GitHub Releases 페이지의 **Assets**가 잠시 돌아가 보일 수 있습니다. 스피너가 끝나지 않으면 위 주소를 브라우저에 붙여 넣으세요.
 
@@ -51,7 +51,7 @@ Word·한글·Excel·PowerPoint는 파일 안 글자를 읽고, 글자가 거의
 
 검색창 아래 **PDF / WORD / HWP / EXCEL**을 누르면 그 종류만 나옵니다. **여러 개를 함께** 누를 수 있습니다. 같은 칸을 다시 누르면 그 종류는 빠지고, 하나도 안 고르면 모든 종류를 찾습니다.
 
-검색한 뒤 검색창 옆 **초기화**를 누르면 검색어만 지워집니다. 눌러 둔 종류는 그대로입니다.
+검색한 뒤 검색창 옆 **초기화**를 누르면 검색어와 눌러 둔 종류가 함께 지워집니다.
 
 폴더에 PDF·Word·한글·Excel·PowerPoint를 **나중에 더 넣으면** 앱이 켜져 있는 동안 **자동으로** 그 파일만 읽습니다. 이미 읽은 파일은 그대로 둡니다. 바로 확인하고 싶으면 **폴더** → **새 파일만 읽기**를 눌러도 됩니다. **처음부터 다시 읽기**는 검색 목록을 지운 뒤 전부 다시 읽을 때만 쓰세요.
 

@@ -423,6 +423,7 @@ public partial class MainWindow : Window
     {
         SearchQueryBox.Text = string.Empty;
         _searchSubmitted = false;
+        _formatFilter = SearchFormatFilters.Clear();
         ShowIdleSearch();
         SearchQueryBox.Focus();
     }

@@ -23,6 +23,17 @@ public class SearchFormatFilterTests
     }
 
     [Fact]
+    public void clear_drops_every_selected_format_at_once()
+    {
+        var selected = SearchFormatFilter.Hangul | SearchFormatFilter.Excel | SearchFormatFilter.Ppt;
+
+        Assert.Equal(SearchFormatFilter.All, SearchFormatFilters.Clear());
+        Assert.False(SearchFormatFilters.Includes(SearchFormatFilters.Clear(), SearchFormatFilter.Hangul));
+        Assert.False(SearchFormatFilters.Includes(selected & SearchFormatFilters.Clear(), SearchFormatFilter.Excel));
+        Assert.Empty(SearchFormatFilters.Labels(SearchFormatFilters.Clear()));
+    }
+
+    [Fact]
     public void hint_tells_the_user_which_formats_are_selected()
     {
         Assert.Contains("여러 개", SearchFormatFilters.Hint(SearchFormatFilter.All), StringComparison.Ordinal);

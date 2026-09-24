@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.32</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.33</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -31,6 +31,7 @@ public class SolutionSmokeTests
 
         Assert.Contains("x:Name=\"ResetSearchButton\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"초기화\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("검색어와 고른 종류를 지웁니다", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"IdleHintPanel\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"IdleFormatBadges\"", axaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"PdfFormatButton\"", axaml, StringComparison.Ordinal);
@@ -125,6 +126,8 @@ public class SolutionSmokeTests
         Assert.Contains("SearchHitsPanel", window, StringComparison.Ordinal);
         Assert.Contains("SearchDetailPanel", window, StringComparison.Ordinal);
         Assert.Contains("SearchResultsList_OnSelectionChanged", window, StringComparison.Ordinal);
+        Assert.Contains("SearchFormatFilters.Clear", window, StringComparison.Ordinal);
+        Assert.Contains("ResetSearchButton_OnClick", window, StringComparison.Ordinal);
         Assert.Contains("OpenResultButton_OnClick", window, StringComparison.Ordinal);
         Assert.Contains("RevealResultButton_OnClick", window, StringComparison.Ordinal);
         Assert.Contains("LocationLine", window, StringComparison.Ordinal);
@@ -208,6 +211,7 @@ public class SolutionSmokeTests
         Assert.True(File.Exists(Path.Combine(docs, "이미지-검색-제안.md")));
         var search = File.ReadAllText(Path.Combine(docs, "검색.md"));
         Assert.Contains("여러 개를 함께", search, StringComparison.Ordinal);
+        Assert.Contains("고른 종류", search, StringComparison.Ordinal);
         Assert.Contains("왼쪽 파일 목록", search, StringComparison.Ordinal);
         Assert.Contains("폴더에서 보기", search, StringComparison.Ordinal);
         Assert.Contains("제목 아래", search, StringComparison.Ordinal);
