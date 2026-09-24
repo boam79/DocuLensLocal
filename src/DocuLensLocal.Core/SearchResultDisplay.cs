@@ -29,6 +29,11 @@ public static class SearchResultDisplay
         return string.IsNullOrWhiteSpace(folder) ? date : folder + " · " + date;
     }
 
+    /// <summary>Left-pane rows stay one line so many files fit on screen.</summary>
+    public const int ListRowMaxLines = 1;
+
+    public const string DetailHint = "왼쪽에서 고른 파일의 근거입니다. 열기로 엽니다.";
+
     public static SearchFormatFilter KindGroup(string path)
     {
         var kind = IndexableFiles.KindOf(path);

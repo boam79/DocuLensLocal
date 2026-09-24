@@ -40,6 +40,14 @@ public class SearchResultDisplayTests
     {
         Assert.Equal(expected, SearchResultDisplay.KindGroup(path));
     }
+
+    [Fact]
+    public void list_row_stays_one_line_and_detail_explains_the_pick()
+    {
+        Assert.Equal(1, SearchResultDisplay.ListRowMaxLines);
+        Assert.Contains("왼쪽", SearchResultDisplay.DetailHint, StringComparison.Ordinal);
+        Assert.Contains("열기", SearchResultDisplay.DetailHint, StringComparison.Ordinal);
+    }
 }
 
 public class LocalFileActionsTests

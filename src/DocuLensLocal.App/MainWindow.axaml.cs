@@ -846,9 +846,14 @@ public partial class MainWindow : Window
     private void ApplySearchListMode(SearchListMode mode)
     {
         IdleHintPanel.IsVisible = mode == SearchListMode.Idle;
+        SearchHitsPanel.IsVisible = mode == SearchListMode.Hits;
         SearchResultsList.IsVisible = mode == SearchListMode.Hits;
         EmptyHintPanel.IsVisible = mode == SearchListMode.Empty;
         ResultCountText.IsVisible = mode != SearchListMode.Idle;
+        if (mode != SearchListMode.Hits)
+        {
+            SearchDetailPanel.DataContext = null;
+        }
     }
 
     private void RunSearch()
@@ -896,6 +901,7 @@ public partial class MainWindow : Window
         if (mode == SearchListMode.Hits)
         {
             ApplySearchListMode(SearchListMode.Hits);
+            SearchResultsList.SelectedIndex = 0;
             return;
         }
 
@@ -1090,6 +1096,17 @@ public partial class MainWindow : Window
         }
 
         _watchRetryCount = 0;
+    }
+
+    private void SearchResultsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (SearchResultsList.SelectedItem is SearchResultRow row)
+        {
+            SearchDetailPanel.DataContext = row;
+            return;
+        }
+
+        SearchDetailPanel.DataContext = null;
     }
 
     private void SearchResultsList_OnDoubleTapped(object? sender, TappedEventArgs e)

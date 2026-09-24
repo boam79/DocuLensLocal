@@ -307,16 +307,16 @@
             <Setter Property="BoxShadow" Value="0 3 22 0 #1A0F172A"/>
         </Style>
 
-        <Style Selector="ListBox.search">
+        <Style Selector="ListBox.search-names">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         </Style>
 
-        <Style Selector="ListBox.search ListBoxItem">
+        <Style Selector="ListBox.search-names ListBoxItem">
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <ControlTemplate TargetType="ListBoxItem">
@@ -324,8 +324,8 @@
                             Background="White"
                             BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="14,12">
+                            CornerRadius="10"
+                            Padding="10,8">
                         <ContentPresenter Name="PART_ContentPresenter"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -334,11 +334,11 @@
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="ListBox.search ListBoxItem:pointerover /template/ Border#ItemBd">
+        <Style Selector="ListBox.search-names ListBoxItem:pointerover /template/ Border#ItemBd">
             <Setter Property="Background" Value="#F0FDFA"/>
             <Setter Property="BorderBrush" Value="#99F6E4"/>
         </Style>
-        <Style Selector="ListBox.search ListBoxItem:selected /template/ Border#ItemBd">
+        <Style Selector="ListBox.search-names ListBoxItem:selected /template/ Border#ItemBd">
             <Setter Property="Background" Value="#CCFBF1"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
         </Style>

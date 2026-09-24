@@ -21,7 +21,7 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("<UseWPF>true</UseWPF>", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia", csproj, StringComparison.Ordinal);
         Assert.Contains("Avalonia.Desktop", csproj, StringComparison.Ordinal);
-        Assert.Contains("<Version>0.1.31</Version>", csproj, StringComparison.Ordinal);
+        Assert.Contains("<Version>0.1.32</Version>", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -67,6 +67,11 @@ public class SolutionSmokeTests
         Assert.DoesNotContain("Header=\"폴더 변경\"", axaml, StringComparison.Ordinal);
         Assert.DoesNotContain("x:Name=\"RebuildIndexButton\"", axaml, StringComparison.Ordinal);
         Assert.DoesNotContain("x:Name=\"IndexedFolderText\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SearchHitsPanel\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SearchDetailPanel\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("Classes=\"search-names\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("SelectionChanged=\"SearchResultsList_OnSelectionChanged\"", axaml, StringComparison.Ordinal);
+        Assert.Contains("왼쪽에서 고른 파일의 근거입니다. 열기로 엽니다.", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"열기\"", axaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"폴더에서 보기\"", axaml, StringComparison.Ordinal);
         Assert.Contains("HighlightedTextBlock", axaml, StringComparison.Ordinal);
@@ -117,6 +122,9 @@ public class SolutionSmokeTests
         Assert.Contains("_formatFilter", window, StringComparison.Ordinal);
         Assert.Contains("Search(query!, _formatFilter)", window, StringComparison.Ordinal);
         Assert.Contains("SearchFormatFilters.Includes", window, StringComparison.Ordinal);
+        Assert.Contains("SearchHitsPanel", window, StringComparison.Ordinal);
+        Assert.Contains("SearchDetailPanel", window, StringComparison.Ordinal);
+        Assert.Contains("SearchResultsList_OnSelectionChanged", window, StringComparison.Ordinal);
         Assert.Contains("OpenResultButton_OnClick", window, StringComparison.Ordinal);
         Assert.Contains("RevealResultButton_OnClick", window, StringComparison.Ordinal);
         Assert.Contains("LocationLine", window, StringComparison.Ordinal);
@@ -200,6 +208,7 @@ public class SolutionSmokeTests
         Assert.True(File.Exists(Path.Combine(docs, "이미지-검색-제안.md")));
         var search = File.ReadAllText(Path.Combine(docs, "검색.md"));
         Assert.Contains("여러 개를 함께", search, StringComparison.Ordinal);
+        Assert.Contains("왼쪽 파일 목록", search, StringComparison.Ordinal);
         Assert.Contains("폴더에서 보기", search, StringComparison.Ordinal);
         Assert.Contains("제목 아래", search, StringComparison.Ordinal);
         Assert.Contains("폴더", search, StringComparison.Ordinal);
